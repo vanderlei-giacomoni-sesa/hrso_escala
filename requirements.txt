@@ -1,3 +1,10 @@
 django
 django-localflavor
+validate_docbr
 psycopg[binary]
+graphene-django
+django-webpack-loader
+django-bootstrap5
+Unidecode
+xlsxwriter
+django-python3-ldap

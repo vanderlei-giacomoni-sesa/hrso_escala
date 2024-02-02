@@ -1,0 +1,175 @@
+{% extends 'pessoas/base_app.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    <div class="row">
+        <div class="col-3" id="coluna-nav-setores">
+
+        </div>
+        <div class="col-9">
+
+            <div><form action="{% url 'Pessoas:Cadastrar Setor' slug_unidade=unidade.slug %}" method="POST">
+                {% csrf_token %}
+
+                <!-- form fields go here -->
+                <div class="text-end">
+                    {% if setor %}
+                    <input hidden type="text" name="tipo-acao" value="novo-setor-setor">
+                    <input hidden type="text" name='id' value="{{ setor.id }}">
+
+                    <a class="btn btn-success" href="{% url 'Pessoas:Colaboradores Setor' slug_unidade=unidade.slug slug_setor=setor.slug %}">Colaboradores Setor</a>
+
+                {% else %}
+                    <input hidden type="text" name="tipo-acao" value="novo-setor-unidade">
+                    <input hidden type="text" name='id' value="{{ unidade.id }}">
+
+                    <a class="btn btn-success" href="{% url 'Pessoas:Colaboradores Unidade' slug_unidade=unidade.slug %}">Colaboradores Unidade</a>
+
+                {% endif %}
+                    <input type="submit" value="Adicionar Setor" class="btn btn-primary">
+                </div>
+            </form></div>
+            <div class="container-fluid">
+                <h3>{{ form.titulo }}</h3>
+                <form action="" method="POST" id="formulario-atualizar-unidade">
+                    {% csrf_token %}
+                    {% bootstrap_form form %}
+                    <div id="botao-editar" class="btn btn-primary" onclick="ativarFormulario()" style="display: none">Atualizar Dados</div>
+                    <button id="botao-atualizar" class="btn btn-success" style="display: none" type="submit">Atualizar</button>
+                    <div id="botao-cancelar" class="btn btn-danger" onclick="inativarFormulario()" style="display: none">Cancelar</div>
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <br>
+
+    {% bootstrap_messages %}
+
+    <script>
+        unidades = {{ unidades|safe }};
+
+        function criarNavUnidadeSetores(unidades){
+            let navbarLight = document.createElement('nav')
+            navbarLight.className = "navbar navbar-light"
+
+            let ulNavbar = document.createElement('ul')
+            ulNavbar.className = "navbar-nav"
+            for(let unidade of unidades){
+                let aUnidade = document.createElement('a')
+                if(unidade.ativa){
+                    aUnidade.className = "nav-link active"
+                }else{
+                    aUnidade.className = "nav-link"
+                }
+                aUnidade.href = `{% url 'Pessoas:organizacao' %}${unidade.slug}`
+                aUnidade.innerHTML = unidade.nome_unidade
+                ulNavbar.appendChild(aUnidade)
+                let setores = unidade.setores_unidade
+
+                let navSetors = criarNavSetores(setores, unidade.slug)
+                ulNavbar.append(navSetors)
+            }
+
+            navbarLight.appendChild(ulNavbar)
+
+            return navbarLight
+        }
+
+        function criarNavSetores(setores, slug_unidade){
+            let divContainer = document.createElement('div')
+            divContainer.className = "container-fluid"
+
+            let navbarLight = document.createElement('nav')
+            navbarLight.className = "navbar navbar-light"
+
+            let ulNavbar = document.createElement('ul')
+            ulNavbar.className = "navbar-nav"
+            for(let setor of setores){
+                let liSetor = document.createElement('li')
+                liSetor.className = "nav-item"
+
+                let aSetor = document.createElement('a')
+                if (setor['setor_ativo'] === true){
+                    aSetor.className = "nav-link active"
+                }else{
+                    aSetor.className = "nav-link"
+                }
+                aSetor.innerHTML = setor.nome_setor
+                aSetor.href = `{% url 'Pessoas:organizacao' %}${slug_unidade}/${setor.slug}`
+
+
+                liSetor.appendChild(aSetor)
+                ulNavbar.appendChild(liSetor)
+                if(setor.setores_setor){
+                    let navSetoresSetor = criarNavSetores(setor.setores_setor, slug_unidade)
+                    ulNavbar.appendChild(navSetoresSetor)
+                }
+            }
+            navbarLight.appendChild(ulNavbar)
+
+            divContainer.appendChild(navbarLight)
+
+            return divContainer
+        }
+
+        function inativarFormulario(){
+            let formulario = document.getElementById('formulario-atualizar-unidade')
+
+            inputsFormulario = formulario.getElementsByTagName('input')
+            for(let input of inputsFormulario){
+                input.disabled = true
+            }
+            selectsFormulario = formulario.getElementsByTagName('select')
+            for(let select of selectsFormulario){
+                select.disabled = true
+            }
+
+            botaoAtualizar = document.getElementById('botao-atualizar')
+            botaoAtualizar.style.display = 'none'
+
+            botaoEditar = document.getElementById('botao-editar')
+            botaoEditar.style.display = 'inline'
+
+            botaoCancelar = document.getElementById('botao-cancelar')
+            botaoCancelar.style.display = 'none'
+        }
+
+        function ativarFormulario(){
+            let formulario = document.getElementById('formulario-atualizar-unidade')
+
+            inputsFormulario = formulario.getElementsByTagName('input')
+            for(let input of inputsFormulario){
+                input.disabled = false
+            }
+            selectsFormulario = formulario.getElementsByTagName('select')
+            for(let select of selectsFormulario){
+                select.disabled = false
+            }
+
+            botaoEditar = document.getElementById('botao-editar')
+            botaoEditar.style.display = "none"
+
+            botaoAtualizar = document.getElementById('botao-atualizar')
+            botaoAtualizar.style.display = "inline"
+
+            botaoCancelar = document.getElementById('botao-cancelar')
+            botaoCancelar.style.display = "inline"
+        }
+
+        inativarFormulario()
+
+        const colNavSet = document.getElementById('coluna-nav-setores')
+
+        colNavSet.appendChild(criarNavUnidadeSetores(unidades))
+
+    </script>
+
+{% endblock %}

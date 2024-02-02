@@ -1,10 +1,14 @@
+from datetime import date, datetime
+from django.utils.translation import gettext_lazy as _
+
 from django.contrib.auth.models import User, Group
 from django.db import models
 from django.utils.text import slugify
 from localflavor.br.models import *
 from django.core.exceptions import ValidationError
 
-from comuns.models import PeriodoReferencia, Fornecedor
+
+from comuns.models import PeriodoReferencia, Fornecedor, Funcao, Ocupacao
 
 
 class PessoaFisica(models.Model):
@@ -12,7 +16,7 @@ class PessoaFisica(models.Model):
     nome = models.CharField(max_length=200)
     cpf = BRCPFField()
     slug = models.SlugField(max_length=250)
-    cns = models.SlugField(max_length=30, blank=True, null=True)
+    cns = models.CharField(max_length=30, blank=True, null=True)
 
     class Meta:
         ordering = ['nome']
@@ -30,6 +34,12 @@ class PessoaFisica(models.Model):
 class PessoaFisicaUsuario(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.PROTECT)
     pessoa_fisica = models.ForeignKey(PessoaFisica, on_delete=models.PROTECT)
+
+
+class Profissional(models.Model):
+    pessoa_fisica = models.ForeignKey(PessoaFisica, on_delete=models.PROTECT)
+    funcao = models.ForeignKey(Funcao, on_delete=models.PROTECT)
+    cbo = models.ForeignKey(Ocupacao, on_delete=models.PROTECT)
 
 
 class Unidade(models.Model):
@@ -74,46 +84,25 @@ class Setor(models.Model):
             self.save()
 
 
-# Criar multiplos vinculos, manter apenas 1 ativo
-class VinculoPessoaFisicaSetor(models.Model):
-    setor = models.ForeignKey(Setor, on_delete=models.PROTECT)
-    pessoa_fisica = models.ForeignKey(PessoaFisica, on_delete=models.CASCADE)
-    inicio_vinculo = models.DateField()
-    ativo = models.BooleanField(default=True)
-    fim_vinculo = models.DateField()
-
-    def clean(self):
-        if VinculoPessoaFisicaSetor.objects.filter(
-                setor=self.setor, pessoa_fisica=self.pessoa_fisica, ativo=True).exists():
-            raise ValidationError("Ja existe um vinculo vijente entre colaborador e setor")
-
-
-#Strategy
 class VinculoFuncional(models.Model):
-    cpf = models.ForeignKey(PessoaFisica, on_delete=models.CASCADE)
-    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE)
+    class Vinculo(models.IntegerChoices):
+        SESA = 1, _("SESA")
+        FUNEAS = 2, _("FUNEAS")
+        CONTRATO = 3, _("CONTRATO")
+        ACADEMICO = 4, _("ACADEMICO")
+
+    profissional = models.ForeignKey(Profissional, on_delete=models.PROTECT)
+    cnpj_vinculo = models.ForeignKey(Fornecedor, on_delete=models.PROTECT)
     vinculo_ativo = models.BooleanField(default=True)
+    tipo_vinculo = models.IntegerField(choices=Vinculo)
 
-    class Meta:
-        abstract = True
-
-
-class VinculoMeta4(VinculoFuncional):
-    id_meta4 = models.IntegerField()
-    id_ato_formal = models.CharField(max_length=200)
-
-
-class VinculoCnpj(VinculoFuncional):
-    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.CASCADE)
-
-
-class VinculoFuneas(VinculoFuncional):
-    pass
+    id_meta4 = models.IntegerField(blank=True, null=True)
+    id_ato_formal = models.CharField(blank=True, null=True)
 
 
 class LancamentoContrachequeMeta4(models.Model):
     periodo_referencia = models.ForeignKey(PeriodoReferencia, on_delete=models.CASCADE)
-    vinculo_meta4 = models.ForeignKey(VinculoMeta4, on_delete=models.CASCADE)
+    vinculo_funcional = models.ForeignKey(VinculoFuncional, on_delete=models.CASCADE)
     id_lancamento = models.IntegerField()
     descricao_lancamento = models.CharField(max_length=200)
     valor_vantagem = models.FloatField()
@@ -121,7 +110,7 @@ class LancamentoContrachequeMeta4(models.Model):
 
 
 class DadosCadastraisMeta4(models.Model):
-    id_vinculo_meta4 = models.ForeignKey(VinculoMeta4, on_delete=models.CASCADE)
+    vinculo_funcional = models.ForeignKey(VinculoFuncional, on_delete=models.CASCADE)
     periodo_referencia = models.ForeignKey(PeriodoReferencia, on_delete=models.CASCADE)
     rg = models.CharField(max_length=200)
     t_emp = models.CharField(max_length=200)
@@ -130,7 +119,7 @@ class DadosCadastraisMeta4(models.Model):
     admissao = models.DateField()
     carga_horaria = models.IntegerField()
     cargo = models.CharField(max_length=200)
-    funcao = models.CharField(max_length=200)
+    funcao = models.ForeignKey(Funcao, on_delete=models.PROTECT)
     classe = models.CharField(max_length=200)
     referencia_classe = models.CharField(max_length=200)
     cidade = models.CharField(max_length=200)
@@ -139,15 +128,32 @@ class DadosCadastraisMeta4(models.Model):
     quadro = models.TextField(max_length=200)
 
 
+class VinculoColaboradorUnidade(models.Model):
+    unidade = models.ForeignKey(Unidade, on_delete=models.PROTECT)
+    vinculo_funcional = models.ForeignKey(VinculoFuncional, on_delete=models.PROTECT)
+    ativo = models.BooleanField(default=True)
+
+    inicio_vinculo = models.DateField(auto_now_add=True)
+    fim_vinculo = models.DateField(blank=True, null=True)
+
+    def clean(self):
+        if VinculoColaboradorUnidade.objects.filter(
+                unidade=self.unidade, vinculo_funcional=self.vinculo_funcional).exists():
+            raise ValidationError("Ja existe um vinculo vijente entre colaborador e Unidade")
 
 
+# Criar multiplos vinculos, manter apenas 1 ativo
+class VinculoPessoaFisicaSetor(models.Model):
+    setor = models.ForeignKey(Setor, on_delete=models.PROTECT)
+    vinculo_unidade = models.ForeignKey(VinculoColaboradorUnidade, on_delete=models.CASCADE)
+    inicio_vinculo = models.DateField(auto_now_add=True)
+    ativo = models.BooleanField(default=True)
+    fim_vinculo = models.DateField(blank=True, null=True)
 
-
-
-
-
-
-
+    def clean(self):
+        if VinculoPessoaFisicaSetor.objects.filter(
+                setor=self.setor, vinculo_unidade=self.vinculo_unidade).exists():
+            raise ValidationError("Ja existe um vinculo vijente entre colaborador e setor")
 
 
 

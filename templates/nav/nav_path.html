@@ -1,0 +1,26 @@
+
+<nav class="navbar navbar-expand-sm bg-light" style="height: 36pt">
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav mr-auto">
+
+            {% for n in nav_path %}
+
+                {% if not forloop.first %}
+                    <li class="nav-item">
+                        <a class="nav-link disabled"> > </a>
+                    </li>
+                {% endif %}
+
+                {% if n.options %}
+                    <li class="nav-item">
+                    <a class="nav-link"><i class="fas fa-bars"></i></a>
+            </li>
+
+                {% endif %}
+            <li class="nav-item">
+                <a class="nav-link {% if n.ativo %} disabled{% endif %}" href="{{ n.href }}">{{ n.nome }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</nav>

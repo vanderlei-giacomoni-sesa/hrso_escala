@@ -1,0 +1,169 @@
+{% extends 'pessoas/base_app.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    <div class="row">
+        <div class="col-3" id="coluna-nav-setores">
+
+        </div>
+        <div class="col-9" id="coluna-colaboradores-unidade">
+
+        </div>
+
+    </div>
+
+    <br>
+
+    {% bootstrap_messages %}
+
+    <script>
+
+        unidades = {{ unidades|safe }};
+
+        colaboradores = {{ colaboradores|safe }};
+
+        urlColaboradores = "{% url 'Pessoas:colaboradores' %}";
+
+        console.log(urlColaboradores)
+
+        function criarNavColaboradoresUnidadeSetores(unidades){
+            let navbarLight = document.createElement('nav')
+            navbarLight.className = "navbar navbar-light"
+
+            let ulNavbar = document.createElement('ul')
+            ulNavbar.className = "navbar-nav"
+            for(let unidade of unidades){
+                let aUnidade = document.createElement('a')
+                if(unidade.ativa){
+                    aUnidade.className = "nav-link active"
+                }else{
+                    aUnidade.className = "nav-link"
+                }
+                aUnidade.href = `{% url 'Pessoas:Colaboradores Unidade' slug_unidade=unidade.slug %}`
+                aUnidade.innerHTML = unidade.nome_unidade
+                ulNavbar.appendChild(aUnidade)
+                let setores = unidade.setores_unidade
+
+                let navSetors = criarNavColaboradoresSetores(setores, unidade.slug)
+                ulNavbar.append(navSetors)
+            }
+
+            navbarLight.appendChild(ulNavbar)
+
+            return navbarLight
+        }
+
+        function criarTabelaColaboradores(colaboradores){
+            let tabelaColaboradores = document.createElement("table")
+            tabelaColaboradores.setAttribute('class', 'table table-bordered')
+            tabelaColaboradores.setAttribute('id', 'tabela-pessoas')
+
+            let cabecalhoTabela = document.createElement("thead")
+            cabecalhoTabela.setAttribute('class', 'thead-light')
+
+            let linhaCabecalho = document.createElement("tr")
+
+            let colunaA = document.createElement('th')
+            colunaA.appendChild(document.createTextNode("CPF"))
+
+            let colunaB = document.createElement('th')
+            colunaB.appendChild(document.createTextNode("Nome"))
+
+            let colunaC = document.createElement('th')
+            colunaC.appendChild(document.createTextNode("Vinculo"))
+
+            linhaCabecalho.appendChild(colunaA)
+            linhaCabecalho.appendChild(colunaB)
+            linhaCabecalho.appendChild(colunaC)
+
+            cabecalhoTabela.appendChild(linhaCabecalho)
+
+            let corpoTabela = document.createElement("tbody")
+            corpoTabela.setAttribute('id', 'id-dados-pessoas')
+
+            for(c of colaboradores){
+                urlColaborador = `${urlColaboradores}colaborador/${c.slug}`
+                let linhaColaborador = document.createElement('tr')
+                let celulaCPF = document.createElement('td')
+                let aCPF = document.createElement('a')
+                aCPF.href = urlColaborador
+                aCPF.appendChild(document.createTextNode(c.cpf))
+                celulaCPF.appendChild(aCPF)
+
+                let celulaNome = document.createElement('td')
+
+                let aNome = document.createElement('a')
+                aNome.href = urlColaborador
+                aNome.appendChild(document.createTextNode(c.nome))
+
+                celulaNome.appendChild(aNome)
+
+                let celulaVinculo = document.createElement('td')
+                celulaVinculo.appendChild(document.createTextNode(c.tipo_vinculo))
+
+                linhaColaborador.appendChild(celulaCPF)
+                linhaColaborador.appendChild(celulaNome)
+                linhaColaborador.appendChild(celulaVinculo)
+                corpoTabela.appendChild(linhaColaborador)
+            }
+
+
+
+
+            tabelaColaboradores.appendChild(cabecalhoTabela)
+            tabelaColaboradores.appendChild(corpoTabela)
+
+            return tabelaColaboradores
+        }
+
+        function criarNavColaboradoresSetores(setores, slug_unidade){
+            let divContainer = document.createElement('div')
+            divContainer.className = "container-fluid"
+
+            let navbarLight = document.createElement('nav')
+            navbarLight.className = "navbar navbar-light"
+
+            let ulNavbar = document.createElement('ul')
+            ulNavbar.className = "navbar-nav"
+            for(let setor of setores){
+                let liSetor = document.createElement('li')
+                liSetor.className = "nav-item"
+
+                let aSetor = document.createElement('a')
+                if (setor['setor_ativo'] === true){
+                    aSetor.className = "nav-link active"
+                }else{
+                    aSetor.className = "nav-link"
+                }
+                aSetor.innerHTML = setor.nome_setor
+                aSetor.href = `{% url 'Pessoas:Colaboradores Unidade' slug_unidade=unidade.slug %}${setor['slug']}`
+
+
+                liSetor.appendChild(aSetor)
+                ulNavbar.appendChild(liSetor)
+                if(setor.setores_setor){
+                    let navSetoresSetor = criarNavColaboradoresSetores(setor.setores_setor, slug_unidade)
+                    ulNavbar.appendChild(navSetoresSetor)
+                }
+            }
+            navbarLight.appendChild(ulNavbar)
+
+            divContainer.appendChild(navbarLight)
+
+            return divContainer
+        }
+
+        const colNavSet = document.getElementById('coluna-nav-setores')
+
+        colNavSet.appendChild(criarNavColaboradoresUnidadeSetores(unidades))
+
+        const containerConteudo = document.getElementById('coluna-colaboradores-unidade')
+        containerConteudo.appendChild(criarTabelaColaboradores(colaboradores))
+
+    </script>
+
+{% endblock %}

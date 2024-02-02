@@ -31,7 +31,6 @@ class PeriodoReferencia(models.Model):
             return ValueError
 
 
-
 class Fornecedor(models.Model):
     cnpj_fornecedor = BRCNPJField()
     nome_fantasia = models.CharField(max_length=200)
@@ -61,4 +60,38 @@ class Fornecedor(models.Model):
         super(Fornecedor, self).save(*args, **kwargs)
         if not self.slug:
             self.slug = slugify('{0} {1}'.format(self.id, self.razao_social_fornecedor))
+            self.save()
+
+
+class Ocupacao(models.Model):
+    codigo_cbo = models.CharField(max_length=6)
+    titulo = models.CharField(max_length=250)
+
+    def __str__(self):
+        return self.titulo
+
+
+class ConselhoProfissional(models.Model):
+    nome = models.CharField(max_length=200)
+    sigla = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.sigla
+
+
+class Funcao(models.Model):
+    nome = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, max_length=200)
+    ativa = models.BooleanField(default=True)
+    funcao_medica = models.BooleanField(default=True)
+    conselhos_permitidos = models.ManyToManyField(ConselhoProfissional, blank=True)
+    ocupacoes_permitidas = models.ManyToManyField(Ocupacao, blank=True)
+
+    def __str__(self):
+        return self.nome
+
+    def save(self, *args, **kwargs):
+        super(Funcao, self).save(*args, **kwargs)
+        if not self.slug:
+            self.slug = slugify('{0}{1}'.format(self.id, self.nome))
             self.save()

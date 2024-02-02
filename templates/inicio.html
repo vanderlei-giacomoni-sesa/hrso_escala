@@ -1,10 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'base/base_logado.html' %}
 
-</body>
-</html>
+
+{% block menu_variavel_esquerdo %}
+    <li class="nav-item">
+        <a class="nav-link">Menu Esquerdo</a>
+    </li>
+{% endblock %}
+
+{% block menu_variavel_direito %}
+    <li class="nav-item">
+        <a class="nav-link">Menu Direito</a>
+    </li>
+{% endblock %}
+
+
+{% block conteudo_pagina %}
+
+{% endblock %}

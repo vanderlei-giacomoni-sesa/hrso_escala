@@ -1,0 +1,9 @@
+<li class="nav-item">
+    <a class="nav-link{% if '/colaboradores/' in request.META.PATH_INFO %} active{% endif %}"
+       href="{% url 'Pessoas:colaboradores' %}">Colaboradores</a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link{% if '/organizacao/' in request.META.PATH_INFO %} active{% endif %}"
+    href="{% url 'Pessoas:organizacao' %}">Organização</a>
+</li>

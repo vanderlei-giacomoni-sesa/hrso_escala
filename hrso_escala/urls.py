@@ -17,12 +17,20 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from . import views
-
+from django.contrib.auth import views as auth_views
+from hrso_escala import settings
 
 urlpatterns = [
+
     path('', views.inicio, name='inicio'),
+    path('accounts/', include('django.contrib.auth.urls')),
     path('admin/', admin.site.urls),
+
     path('contratos/', include('contratos.urls')),
     path('escala/', include('escala_geral.urls')),
+    path('pessoas/', include('pessoas.urls')),
+
+    path('sair/', auth_views.LogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='sair'),
+
 
 ]

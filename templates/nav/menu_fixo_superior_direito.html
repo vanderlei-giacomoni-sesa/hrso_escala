@@ -1,0 +1,15 @@
+<ul class="navbar-nav" style="position: absolute; right: 10px; top: 0">
+    <li class="nav-item">
+        <a class="nav-link{% if '/contratos/' in request.META.PATH_INFO %} active{% endif %}" href="{% url 'Contratos:inicio' %}"> Contratos </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link{% if '/escala/' in request.META.PATH_INFO %} active{% endif %}" href="{% url 'Escala:inicio' %}"> Escala </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link{% if '/pessoas/' in request.META.PATH_INFO %} active{% endif %}" href="{% url 'Pessoas:inicio' %}"> Pessoas </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'sair' %}"><i class="fas fa-sign-out-alt"></i> Sair </a>
+    </li>
+</ul>

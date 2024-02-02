@@ -1,0 +1,29 @@
+{% extends "base/base_login.html" %}
+
+{% load django_bootstrap5 %}
+
+{% block content %}
+
+<div class="container" style="width: 20rem">
+
+<form method="post"> {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+
+    {% bootstrap_form form %}
+
+
+    <button type="submit" class="btn btn-primary btn-block">
+        entrar
+    </button>
+
+</form>
+</div>
+
+    {% for message in messages %}
+        <div class="alert alert-danger">
+        <a class="close" href="#" data-dismiss="alert">×</a>
+            {{ message }}
+        </div>
+    {% endfor %}
+
+{% endblock %}

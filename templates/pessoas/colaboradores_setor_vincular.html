@@ -1,0 +1,331 @@
+{% extends 'pessoas/base_app.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    <div class="row">
+        <div class="col-3" id="coluna-nav-setores">
+
+        </div>
+        <div class="col-9">
+            <div class="row">
+                <div class="col">
+                    <h5>Vincular colaboradores por:</h5>
+
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="selecionarTipoBusca"
+                               id="selecionarBuscaNome" value="nome" onclick="selecionarTipoBusca(this)">
+                        <label class="form-check-label" for="selecionarBuscaNome">Nome</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="selecionarTipoBusca"
+                               id="selecionarBuscaFuncao" value="funcao" onclick="selecionarTipoBusca(this)">
+                        <label class="form-check-label" for="selecionarBuscaFuncao">Função</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="selecionarTipoBusca"
+                               id="selecionarBuscaContrato" value="contrato" onclick="selecionarTipoBusca(this)">
+                        <label class="form-check-label" for="selecionarBuscaContrato">Contrato</label>
+                    </div>
+                </div>
+
+            </div>
+            <br>
+            <div class="row" id="linhaBuscar">
+
+            </div>
+
+            <div class="row" id="linhaResultado">
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <br>
+
+    {% bootstrap_messages %}
+
+    <script>
+        unidades = {{ unidades|safe }};
+
+        funcoes = {{ funcoes|safe }};
+
+        console.log(funcoes)
+
+        var tiposBusca = {
+                'nome':{input:criarInputBuscaNome},
+                'funcao':{input:criarInputBuscaFuncao},
+                'contrato':{input:criarInputBuscaContrato}
+
+            };
+
+
+        function criarInputBuscaNome(){
+
+            let grupoBusca = document.createElement('div')
+            grupoBusca.setAttribute('class', 'input-group')
+
+            let inputBuscaNome = document.createElement('input')
+            inputBuscaNome.setAttribute('class', 'form-control')
+            inputBuscaNome.setAttribute('type', 'text')
+            inputBuscaNome.setAttribute('placeholder', 'Digite o nome do colaborador')
+            inputBuscaNome.setAttribute('id', 'id-input-buscar-nome')
+
+            let botaoBuscar = document.createElement('a')
+            botaoBuscar.setAttribute('class', 'btn btn-success')
+            botaoBuscar.appendChild(document.createTextNode("Buscar"))
+            botaoBuscar.setAttribute('data-tipoBusca', 'nome')
+            botaoBuscar.setAttribute('onclick', "buscarColaboradoresVincularSetor(this)")
+
+            grupoBusca.appendChild(inputBuscaNome)
+            grupoBusca.appendChild(botaoBuscar)
+
+            return grupoBusca
+        }
+
+        function criarInputBuscaContrato(){
+
+            let grupoBusca = document.createElement('div')
+            grupoBusca.setAttribute('class', 'input-group')
+
+            let inputBuscaContrato = document.createElement('input')
+            inputBuscaContrato.setAttribute('class', 'form-control')
+            inputBuscaContrato.setAttribute('type', 'text')
+            inputBuscaContrato.setAttribute('placeholder', 'Digite numero do contrato')
+            inputBuscaContrato.setAttribute('id', 'id-input-buscar-contrato')
+
+            let botaoBuscar = document.createElement('input')
+            botaoBuscar.setAttribute('class', 'btn btn-success')
+            botaoBuscar.setAttribute('value', 'Buscar')
+            botaoBuscar.setAttribute('data-tipoBusca', 'contrato')
+            botaoBuscar.setAttribute('onclick', "buscarColaboradoresVincularSetor(this)")
+
+            grupoBusca.appendChild(inputBuscaContrato)
+            grupoBusca.appendChild(botaoBuscar)
+
+            return grupoBusca
+        }
+
+        function criarInputBuscaFuncao(){
+            let grupoBusca = document.createElement('div');
+            grupoBusca.setAttribute('class', 'input-group');
+
+            let selectFuncoes = document.createElement('select');
+            selectFuncoes.setAttribute('class', 'form-control');
+            selectFuncoes.required = true
+            selectFuncoes.setAttribute('id', 'id-input-buscar-funcao')
+
+
+            let opcao_disabled = document.createElement('option');
+            opcao_disabled.text = "Selecione ua Função"
+            selectFuncoes.appendChild(opcao_disabled);
+
+            for(let f of funcoes){
+                let opcao = document.createElement('option');
+                opcao.value = f['id'];
+                opcao.text = f['nome'];
+                selectFuncoes.appendChild(opcao);
+            }
+
+            let botaoBuscar = document.createElement('input');
+            botaoBuscar.setAttribute('class', 'btn btn-success');
+            botaoBuscar.setAttribute('value', 'Buscar');
+            botaoBuscar.setAttribute('data-tipoBusca', 'funcao')
+            botaoBuscar.setAttribute('onclick', "buscarColaboradoresVincularSetor(this)")
+
+
+            grupoBusca.appendChild(selectFuncoes);
+            grupoBusca.appendChild(botaoBuscar);
+
+            return grupoBusca;
+
+        }
+
+        function selecionarTipoBusca(input){
+            const tipoBusca = input.getAttribute('value')
+            let linhaBusca = document.getElementById("linhaBuscar")
+
+            while (linhaBusca.firstChild) {
+                linhaBusca.removeChild(linhaBusca.firstChild);
+            }
+
+            let input_busca = tiposBusca[tipoBusca].input()
+
+            linhaBusca.appendChild(input_busca)
+
+        }
+
+        function escreverTabelaColaboradores(response){
+            const colaboradores = response.colaboradores
+
+            const linhaResultado = document.getElementById('linhaResultado')
+
+            while (linhaResultado.firstChild) {
+                linhaResultado.removeChild(linhaResultado.firstChild);
+            }
+
+            let formulario = criarFormularioBase('vincularColaboradoresSetor')
+
+            let linhaCabecalho = document.createElement('div')
+            linhaCabecalho.setAttribute('class', 'row')
+
+            const tituloCheck = document.createElement('div')
+            tituloCheck.setAttribute('class', 'col-1')
+            tituloCheck.appendChild(document.createTextNode("Vincular"))
+
+            const tituloNome = document.createElement('div')
+            tituloNome.setAttribute('class', 'col-6')
+            tituloNome.appendChild(document.createTextNode("Nome"))
+
+            const tituloFuncao = document.createElement('div')
+            tituloFuncao.setAttribute('class', 'col-5')
+            tituloFuncao.appendChild(document.createTextNode("Função"))
+
+            linhaCabecalho.appendChild(tituloCheck)
+            linhaCabecalho.appendChild(tituloNome)
+            linhaCabecalho.appendChild(tituloFuncao)
+
+            formulario.appendChild(linhaCabecalho)
+
+            for(c of colaboradores){
+                let linhaColaborador = document.createElement('div')
+                linhaColaborador.setAttribute('class', 'row')
+
+                const colunaCheck = document.createElement('div')
+                colunaCheck.setAttribute('class', 'col-1')
+
+                let inputCheck = document.createElement('input')
+                inputCheck.className = "form-check-input"
+                inputCheck.type = "checkbox"
+                inputCheck.name = "profissionalVincular"
+                inputCheck.value = c.id_vinculo_colaborador_unidade
+
+                colunaCheck.appendChild(inputCheck)
+
+                const colunaNome = document.createElement('div')
+                colunaNome.setAttribute('class', 'col-6')
+                colunaNome.appendChild(document.createTextNode(c.nome))
+
+                const colunaFuncao = document.createElement('div')
+                colunaFuncao.setAttribute('class', 'col-5')
+                colunaFuncao.appendChild(document.createTextNode(c.funcao))
+                linhaColaborador.appendChild(colunaCheck)
+                linhaColaborador.appendChild(colunaNome)
+                linhaColaborador.appendChild(colunaFuncao)
+
+                formulario.appendChild(linhaColaborador)
+            }
+
+            let linhaBuscar = document.createElement('div')
+            linhaBuscar.setAttribute('class', 'row')
+
+            const colunaBuscar = document.createElement('div')
+            colunaBuscar.setAttribute('class', 'col')
+
+
+            let botaoVincular = document.createElement('button');
+            botaoVincular.className = "btn btn-primary"
+            botaoVincular.appendChild(document.createTextNode("Vincular"))
+            botaoVincular.type = "submit"
+
+
+            colunaBuscar.appendChild(botaoVincular)
+
+
+            linhaBuscar.appendChild(colunaBuscar)
+
+            formulario.appendChild(linhaBuscar)
+
+            linhaResultado.appendChild(formulario)
+
+        }
+
+        function buscarColaboradoresVincularSetor(botaoBusca){
+            let tipoBusca = botaoBusca.getAttribute('data-tipoBusca')
+            let formData = criarFormdata('buscar-colaborador')
+            formData.append('tipo-busca', tipoBusca)
+            let informacoes_buscar = document.getElementById(`id-input-buscar-${tipoBusca}`).value
+            formData.append('informacoes-buscar', informacoes_buscar)
+
+            enviarFormData(formData, escreverTabelaColaboradores)
+
+        }
+
+        function criarNavColaboradoresUnidadeSetores(unidades){
+            let navbarLight = document.createElement('nav')
+            navbarLight.className = "navbar navbar-light"
+
+            let ulNavbar = document.createElement('ul')
+            ulNavbar.className = "navbar-nav"
+            for(let unidade of unidades){
+                let aUnidade = document.createElement('a')
+                if(unidade.ativa){
+                    aUnidade.className = "nav-link active"
+                }else{
+                    aUnidade.className = "nav-link"
+                }
+                aUnidade.href = `{% url 'Pessoas:Colaboradores Unidade' slug_unidade=unidade.slug %}`
+                aUnidade.innerHTML = unidade.nome_unidade
+                ulNavbar.appendChild(aUnidade)
+                let setores = unidade.setores_unidade
+
+                let navSetors = criarNavColaboradoresSetores(setores, unidade.slug)
+                ulNavbar.append(navSetors)
+            }
+
+            navbarLight.appendChild(ulNavbar)
+
+            return navbarLight
+        }
+
+
+
+        function criarNavColaboradoresSetores(setores, slug_unidade){
+            let divContainer = document.createElement('div')
+            divContainer.className = "container-fluid"
+
+            let navbarLight = document.createElement('nav')
+            navbarLight.className = "navbar navbar-light"
+
+            let ulNavbar = document.createElement('ul')
+            ulNavbar.className = "navbar-nav"
+            for(let setor of setores){
+                let liSetor = document.createElement('li')
+                liSetor.className = "nav-item"
+
+                let aSetor = document.createElement('a')
+                if (setor['setor_ativo'] === true){
+                    aSetor.className = "nav-link active"
+                }else{
+                    aSetor.className = "nav-link"
+                }
+                aSetor.innerHTML = setor.nome_setor
+                aSetor.href = `{% url 'Pessoas:Colaboradores Unidade' slug_unidade=unidade.slug %}${setor['slug']}`
+
+
+                liSetor.appendChild(aSetor)
+                ulNavbar.appendChild(liSetor)
+                if(setor.setores_setor){
+                    let navSetoresSetor = criarNavColaboradoresSetores(setor.setores_setor, slug_unidade)
+                    ulNavbar.appendChild(navSetoresSetor)
+                }
+            }
+            navbarLight.appendChild(ulNavbar)
+
+            divContainer.appendChild(navbarLight)
+
+            return divContainer
+        }
+
+        const colNavSet = document.getElementById('coluna-nav-setores')
+
+        colNavSet.appendChild(criarNavColaboradoresUnidadeSetores(unidades))
+
+    </script>
+
+{% endblock %}

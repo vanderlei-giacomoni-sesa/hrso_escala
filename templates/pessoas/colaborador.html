@@ -1,0 +1,314 @@
+{% extends 'pessoas/base_app.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    <div class="row">
+        <div class="col-2" id="">
+
+        </div>
+        <div class="col-8">
+            <div class="row" id="linha-titolos">
+                <div class="col">
+                    <h3>{{ colaborador.nome }}</h3>
+                    <h5>CPF: {{ colaborador.cpf }}</h5>
+
+                </div>
+
+            </div>
+            <br>
+            <div class="row" id="linha-conteudo">
+                <div class="col" id="coluna-conteudo">
+                    <div class="row">
+                        <div class="col-8">
+                            <h5>Vínculos:</h5>
+                        </div>
+                        <div class="col-4">
+                            <input class="btn btn-primary" onclick="adicionarVinculoColaborador()" value="Adicionar Vínculo">
+
+                        </div>
+
+
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            {% for vinculo in vinculos_colaborador %}
+                                {{ vinculo.tipo_vinculo }} - {{ vinculo.funcao }}
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="col-2" id="">
+
+        </div>
+
+    </div>
+
+    <br>
+
+    {% bootstrap_messages %}
+
+    <script>
+        unidades = {{ unidades|safe }};
+
+        console.log(unidades)
+
+        urlColaboradores = "{% url 'Pessoas:colaboradores' %}";
+
+        console.log(urlColaboradores)
+
+        function criarModal(idModal, tituloModal, conteudoModal){
+            let modal = document.createElement('div')
+            modal.className = "modal"
+            modal.id= idModal
+
+            let modalDialog = document.createElement('div')
+            modalDialog.className = "modal-dialog"
+
+            let modalContent = document.createElement("div")
+            modalContent.className = "modal-content"
+
+            ///////////////////// CAbeçalho do Modal ///////////////////////////
+            let modalHeader = document.createElement('div')
+            modalHeader.className = "modal-header"
+
+            let modalTitle = document.createElement('H4')
+            modalTitle.className = "modal-title"
+            modalTitle.appendChild(document.createTextNode(tituloModal))
+
+            let btnCloseModal = document.createElement('button')
+            btnCloseModal.type = "button"
+            btnCloseModal.className = "btn-close"
+            btnCloseModal.setAttribute("data-bs-dismiss", "modal")
+
+            modalHeader.appendChild(modalTitle)
+            modalHeader.appendChild(btnCloseModal)
+            ///////////////////////////////////////////////////////////////////
+            /////////////////  Conteudo do Modal  /////////////////////////////
+
+            let modalBody = document.createElement("div")
+            modalBody.className = "modal-body"
+
+            modalBody.appendChild(conteudoModal)
+
+            ///////////////////////////////////////////////////////////////////
+
+            modalContent.appendChild(modalHeader)
+            modalContent.appendChild(modalBody)
+
+            modalDialog.appendChild(modalContent)
+            modal.appendChild(modalDialog)
+
+            return modal
+        }
+
+        function criarConteudoModalVincularColaborador(){
+            let containerModal = document.createElement('div')
+            containerModal.className = "container-fluid"
+            containerModal.appendChild(criarOptionsTipoVinculo())
+
+            return containerModal
+        }
+
+        function adicionarVinculoColaborador(){
+            const idModal = "idModalVincularCoalborador"
+
+            if(document.getElementById(idModal)){
+                let modal = new bootstrap.Modal(document.getElementById(idModal))
+                modal.show()
+            }else{
+                const tituloModal = "Vincular Colaborador"
+                const conteudoModal = criarConteudoModalVincularColaborador()
+
+                let janela_modal = criarModal(idModal, tituloModal, conteudoModal)
+
+                document.body.appendChild(janela_modal)
+                modal = new bootstrap.Modal(janela_modal)
+                modal.show()
+
+            }
+        }
+
+        function linhaVincularFuneas(){
+            let objetoHTML = document.createElement('div');
+            objetoHTML.className = "row";
+            objetoHTML.id = 'idLinhaVincularColaborador'
+
+            let divCol = document.createElement('div');
+            divCol.className = "col d-flex justify-content-end";
+
+            let botaoBuscarFuneas = document.createElement('button');
+            botaoBuscarFuneas.type = "button";
+            botaoBuscarFuneas.className = "btn btn-primary";
+            botaoBuscarFuneas.appendChild(document.createTextNode("Criar Vinculo Funeas"));
+
+            divCol.appendChild(botaoBuscarFuneas)
+
+            objetoHTML.appendChild(divCol)
+
+            return objetoHTML
+
+        }
+
+        function linhaVincularContrato(){
+            let objetoHTML = document.createElement('div');
+            objetoHTML.className = "row";
+            objetoHTML.id = 'idLinhaVincularColaborador'
+
+            let divCol = document.createElement('div');
+            divCol.className = "col d-flex justify-content-end";
+
+            let botaoBuscarFuneas = document.createElement('button');
+            botaoBuscarFuneas.type = "button";
+            botaoBuscarFuneas.className = "btn btn-primary";
+            botaoBuscarFuneas.appendChild(document.createTextNode("Buscar Fornecedor"));
+
+            divCol.appendChild(botaoBuscarFuneas)
+
+            objetoHTML.appendChild(divCol)
+
+            return objetoHTML
+
+        }
+
+        function linhaVincularAcademico(){
+            let objetoHTML = document.createElement('div');
+            objetoHTML.className = "row";
+            objetoHTML.id = 'idLinhaVincularColaborador'
+
+            let divCol = document.createElement('div');
+            divCol.className = "col d-flex justify-content-end";
+
+            let botaoBuscarFuneas = document.createElement('button');
+            botaoBuscarFuneas.type = "button";
+            botaoBuscarFuneas.className = "btn btn-primary";
+            botaoBuscarFuneas.appendChild(document.createTextNode("Buscar Universidade"));
+
+            divCol.appendChild(botaoBuscarFuneas)
+
+            objetoHTML.appendChild(divCol)
+
+            return objetoHTML
+
+        }
+
+        function criarRadio(id, value, label, name) {
+            let divRadio = document.createElement('div');
+            divRadio.className = "form-check form-check-inline";
+
+            let inputRadio = document.createElement('input');
+            inputRadio.type = "radio";
+            inputRadio.className = "form-check-input";
+            inputRadio.name = name;
+            inputRadio.id = id;
+            inputRadio.value = value;
+            inputRadio.onclick = function() { selecionarTipoVinculo(this); }
+
+            let labelRadio = document.createElement('label');
+            labelRadio.className = "form-check-label";
+            labelRadio.htmlFor = id;
+            labelRadio.appendChild(document.createTextNode(label));
+
+            divRadio.appendChild(inputRadio);
+            divRadio.appendChild(labelRadio);
+
+            return divRadio;
+        }
+
+
+
+        function criarOptionsTipoVinculo() {
+            let objetoHTML = document.createElement('div');
+            objetoHTML.className = "row";
+
+            let divCol = document.createElement('div');
+            divCol.className = "col";
+
+            let h5 = document.createElement('h5');
+            h5.appendChild(document.createTextNode("Selecione o tipo do Vínculo: "));
+
+            divCol.appendChild(h5);
+
+            divCol.appendChild(criarRadio("selecionarVinculoFuneas", "funeas", "Funeas", 'selecionarTipoVinculo'));
+            divCol.appendChild(criarRadio("selecionarBuscaContrato", "contrato", "Contrato", 'selecionarTipoVinculo'));
+            divCol.appendChild(criarRadio("selecionarBuscaAcademico", "academico", "Acadêmino", "selecionarTipoVinculo"));
+
+            objetoHTML.appendChild(divCol);
+
+            return objetoHTML;
+
+        }
+
+        function criarOptionsUnidade() {
+            let objetoHTML = document.createElement('div');
+            objetoHTML.className = "row";
+
+            let divCol = document.createElement('div');
+            divCol.className = "col";
+
+            let h5 = document.createElement('h5');
+            h5.appendChild(document.createTextNode("Selecione uma Unidade: "));
+
+            divCol.appendChild(h5);
+
+            divCol.appendChild(criarRadio("selecionarVinculoFuneas", "funeas", "Funeas", 'selecionarTipoVinculo'));
+            divCol.appendChild(criarRadio("selecionarBuscaContrato", "contrato", "Contrato", 'selecionarTipoVinculo'));
+            divCol.appendChild(criarRadio("selecionarBuscaAcademico", "academico", "Acadêmino", "selecionarTipoVinculo"));
+
+            objetoHTML.appendChild(divCol);
+
+            return objetoHTML;
+
+        }
+
+        function criarOptionsFuncaoColaborador() {
+            let objetoHTML = document.createElement('div');
+            objetoHTML.className = "row";
+
+            let divCol = document.createElement('div');
+            divCol.className = "col";
+
+            let h5 = document.createElement('h5');
+            h5.appendChild(document.createTextNode("Selecione uma Função para Vincular: "));
+
+            divCol.appendChild(h5);
+
+            divCol.appendChild(criarRadio("selecionarVinculoFuneas", "funeas", "Funeas", 'selecionarTipoVinculo'));
+            divCol.appendChild(criarRadio("selecionarBuscaContrato", "contrato", "Contrato", 'selecionarTipoVinculo'));
+            divCol.appendChild(criarRadio("selecionarBuscaAcademico", "academico", "Acadêmino", "selecionarTipoVinculo"));
+
+            objetoHTML.appendChild(divCol);
+
+            return objetoHTML;
+
+        }
+
+        function selecionarTipoVinculo(input_selecionado){
+            document.getElementById("idLinhaVincularColaborador")?.remove();
+
+            let container_atualizar = input_selecionado.parentNode.parentNode
+
+            const tipoVinculoSelecionado = input_selecionado.value
+
+            vinculos_validos = {"funeas":linhaVincularFuneas, "contrato":linhaVincularContrato, "academico":linhaVincularAcademico}
+
+            container_atualizar.appendChild(vinculos_validos[tipoVinculoSelecionado]())
+
+        }
+
+
+
+
+
+    </script>
+
+
+{% endblock %}

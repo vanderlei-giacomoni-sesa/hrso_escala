@@ -1,0 +1,33 @@
+{% extends 'pessoas/base_app.html' %}
+
+
+
+{% block conteudo_pagina %}
+
+    <p>Pessoas Conteudo</p>
+
+    <table class="table table-bordered" id="tabela-pessoas">
+        <thead class="thead-light">
+        <tr>
+            <th>CPF</th>
+            <th>Nome</th>
+        </tr>
+
+        </thead>
+
+        <tbody id="dados-pessoas">
+        {% for c in colaboradores %}
+            <tr>
+                <td>{{ c.cpf }}</td>
+                <td>{{ c.nome }}</td>
+            </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+
+
+
+
+
+{% endblock %}

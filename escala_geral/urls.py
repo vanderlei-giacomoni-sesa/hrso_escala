@@ -4,5 +4,7 @@ from django.contrib.auth import views as auth_views
 
 app_name = 'Escala'
 
-urlpatterns = []
+urlpatterns = [
+    path('', views.inicio, name='inicio'),
+]
 

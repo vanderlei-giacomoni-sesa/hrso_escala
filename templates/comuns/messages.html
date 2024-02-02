@@ -1,0 +1,14 @@
+{% if messages %}
+    <div class="container">
+        {% for message in messages %}
+            <script>
+                console.log("{{ message.level }}");
+            </script>
+
+            <div class="alert alert-{% if message.level == 25 %}success{% else %}danger{% endif %} alert-dismissible">
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <strong>{% if message.level == 25 %}{% else %}Erro!{% endif %}</strong> {{ message }}.
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

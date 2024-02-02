@@ -10,7 +10,6 @@ from comuns.models import Fornecedor
 # Create your models here.
 
 
-
 class ModalidadeLicitacao(models.Model):
     nome_modalidade = models.CharField(max_length=30, verbose_name='nome da modalidade')
     modalidade_faturavel = models.BooleanField(default=True)

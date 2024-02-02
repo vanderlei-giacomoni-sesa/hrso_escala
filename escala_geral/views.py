@@ -5,4 +5,4 @@ from django.shortcuts import render
 from django.shortcuts import redirect
 
 def inicio(request):
-    return render(request, 'inicio.html')
+    return render(request, 'escala_geral/base.html')
