@@ -11,6 +11,42 @@
 
         </div>
         <div class="col-9" id="coluna-colaboradores-unidade">
+            <h5> Colaboradores {{ unidade.nome_unidade }}</h5>
+
+            <div class="row">
+                <div class="col-10">
+                    <form id="dados-buscar"> {% csrf_token %}
+                        <div class="row">
+                            <div class="col">
+                                <input class="form-control" id="buscar-cpf" type="text" placeholder="Buscar por CPF">
+                            </div>
+                            <div class="col">
+                                <input class="form-control" id="buscar-nome" type="text" placeholder="Buscar pr Nome">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-2"><button class="btn btn-primary" onclick="buscarPessoas('{{ unidade.id }}')">Buscar</button></div>
+            </div>
+
+            <br>
+
+            <div class="row"><div class="col">
+                <table class="table table table-striped" id="tabela-pessoas">
+                    <thead class="thead-light">
+                    <tr>
+                        <th>CPF</th>
+                        <th>Nome</th>
+                        <th>Vinculo</th>
+                    </tr>
+
+                    </thead>
+
+                    <tbody id="dados-pessoas">
+
+                    </tbody>
+                </table>
+            </div></div>
 
         </div>
 
@@ -24,38 +60,9 @@
 
         unidades = {{ unidades|safe }};
 
-        colaboradores = {{ colaboradores|safe }};
-
         urlColaboradores = "{% url 'Pessoas:colaboradores' %}";
 
         console.log(urlColaboradores)
-
-        function criarNavColaboradoresUnidadeSetores(unidades){
-            let navbarLight = document.createElement('nav')
-            navbarLight.className = "navbar navbar-light"
-
-            let ulNavbar = document.createElement('ul')
-            ulNavbar.className = "navbar-nav"
-            for(let unidade of unidades){
-                let aUnidade = document.createElement('a')
-                if(unidade.ativa){
-                    aUnidade.className = "nav-link active"
-                }else{
-                    aUnidade.className = "nav-link"
-                }
-                aUnidade.href = `{% url 'Pessoas:Colaboradores Unidade' slug_unidade=unidade.slug %}`
-                aUnidade.innerHTML = unidade.nome_unidade
-                ulNavbar.appendChild(aUnidade)
-                let setores = unidade.setores_unidade
-
-                let navSetors = criarNavColaboradoresSetores(setores, unidade.slug)
-                ulNavbar.append(navSetors)
-            }
-
-            navbarLight.appendChild(ulNavbar)
-
-            return navbarLight
-        }
 
         function criarTabelaColaboradores(colaboradores){
             let tabelaColaboradores = document.createElement("table")
@@ -120,49 +127,9 @@
             return tabelaColaboradores
         }
 
-        function criarNavColaboradoresSetores(setores, slug_unidade){
-            let divContainer = document.createElement('div')
-            divContainer.className = "container-fluid"
-
-            let navbarLight = document.createElement('nav')
-            navbarLight.className = "navbar navbar-light"
-
-            let ulNavbar = document.createElement('ul')
-            ulNavbar.className = "navbar-nav"
-            for(let setor of setores){
-                let liSetor = document.createElement('li')
-                liSetor.className = "nav-item"
-
-                let aSetor = document.createElement('a')
-                if (setor['setor_ativo'] === true){
-                    aSetor.className = "nav-link active"
-                }else{
-                    aSetor.className = "nav-link"
-                }
-                aSetor.innerHTML = setor.nome_setor
-                aSetor.href = `{% url 'Pessoas:Colaboradores Unidade' slug_unidade=unidade.slug %}${setor['slug']}`
-
-
-                liSetor.appendChild(aSetor)
-                ulNavbar.appendChild(liSetor)
-                if(setor.setores_setor){
-                    let navSetoresSetor = criarNavColaboradoresSetores(setor.setores_setor, slug_unidade)
-                    ulNavbar.appendChild(navSetoresSetor)
-                }
-            }
-            navbarLight.appendChild(ulNavbar)
-
-            divContainer.appendChild(navbarLight)
-
-            return divContainer
-        }
-
         const colNavSet = document.getElementById('coluna-nav-setores')
 
-        colNavSet.appendChild(criarNavColaboradoresUnidadeSetores(unidades))
-
-        const containerConteudo = document.getElementById('coluna-colaboradores-unidade')
-        containerConteudo.appendChild(criarTabelaColaboradores(colaboradores))
+        colNavSet.appendChild(criarNavUnidadeSetoresColaboradores(unidades))
 
     </script>
 

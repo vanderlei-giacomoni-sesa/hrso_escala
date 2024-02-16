@@ -1,0 +1,151 @@
+{% extends 'pessoas/base_app.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    {% bootstrap_messages %}
+
+    <div class="row">
+
+        <div class="col-3">
+            {% include 'pessoas/funcao/nav_funcoes.html' %}
+
+        </div>
+        <div class="col-9" id="">
+            <h3>{{ funcao.nome }}</h3>
+
+            <div class="row">
+                <div class="col" style="text-align: right">
+                    <input class="btn btn-primary" value="Vincular Conselho" onclick="criarModalSelect({{ funcao.id }}, 'vincularConselhoClasse')">
+                </div>
+            </div>
+            <br>
+
+            <div class="list-group">
+                <a class="list-group-item text-center active" data-remote="true">
+                    Conselhos de classe:
+                </a>
+
+                {% for c in conselhos_funcao %}
+                    <li class="list-group-item" style="padding-left: 25px" id="li-cons-{{ c.id }}">
+                        <span style="margin-left: 25px;">{{ c.sigla }} - {{ c.nome }}</span>
+                        <i class="fas fa-trash-alt" style="float: right; margin-right: 10px; cursor: pointer"
+                        onclick="desvincularConselhoClasse({{ funcao.id }}, {{ c.id }})"></i>
+                    </li>
+
+                {% endfor %}
+
+            </div>
+
+            <br>
+
+
+            <br>
+            <br>
+
+            <div class="col" style="text-align: right">
+                <input class="btn btn-primary" value="Vincular CBO" onclick="criarModalInputSelect({{ funcao.id }}, 'vincularCbo')">
+            </div>
+
+            <br>
+
+            <div class="list-group">
+                <a class="list-group-item text-center active" data-remote="true">
+                    Ocupações:
+                </a>
+
+                {% for o in ocupacoes_funcao %}
+                    <li class="list-group-item" style="padding-left: 25px" id="li-cons-{{ o.id }}">
+                        <span style="margin-left: 25px;">{{ o.codigo_cbo }} - {{ o.titulo }}</span>
+                        <i class="fas fa-trash-alt" style="float: right; margin-right: 10px; cursor: pointer" 
+                           onclick="desvincularCbo({{ funcao.id }}, {{ o.id }})"></i>
+                    </li>
+                    
+                {% endfor %}
+
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+
+        var conselhos = {{ conselhos_profissionais|safe }};
+        var ocupacoes = {{ ocupacoes|safe }};
+
+        var options = {
+            'vincularConselhoClasse': {'titulo': "Vincular Conselho de Classe",
+                'options': conselhos,
+                'optionKey': 'sigla',
+                'funcaoBuscar': 'vincularConselhoClasse'},
+            'vincularCbo': {'titulo': "Vincular CBO",
+                'options': ocupacoes,
+                'optionKey': 'titulo',
+                'funcaoBuscar': 'vincularCbo'}
+        }
+
+        function processarVinculoCbo(response){
+            window.location.reload();
+        }
+
+        function processarVinculoConselho(response){
+            window.location.reload();
+        }
+
+
+        function vincularCbo(id, option){
+            const formData = criarFormdata('vincularCbo')
+            formData.append('idFuncao', id)
+            let selectCbo = document.getElementById(`select-${option}-${id}`)
+            
+            formData.append('idCbo', selectCbo.value)
+            validarSelect(selectCbo)
+            if(selectCbo.value !== ""){
+                enviarFormData(formData, processarVinculoCbo)
+            }else{
+                alert('Selecione uma ocupação')
+
+            }
+        }
+
+        function vincularConselhoClasse(id, option){
+            const formData = criarFormdata('vincularConselhoClasse')
+            formData.append('idFuncao', id)
+
+            let selecConselhoClasse = document.getElementById(`select-${option}-${id}`)
+            formData.append('idConselhoClasse', selecConselhoClasse.value)
+            validarSelect(selecConselhoClasse)
+            if(selecConselhoClasse.value !== ""){
+                enviarFormData(formData, processarVinculoConselho)
+            }else{
+                alert('Selecione um Conselho')
+
+            }
+        }
+
+        function desvincularCbo(idFuncao, idCbo){
+            const formData = criarFormdata('desvincularCbo')
+            formData.append('idFuncao', idFuncao)
+            formData.append('idCbo', idCbo)
+            enviarFormData(formData, processarVinculoCbo)
+        }
+        
+        function desvincularConselhoClasse(idFuncao, idConselhoClasse){
+            const formData = criarFormdata('desvincularConselhoClasse')
+            formData.append('idFuncao', idFuncao)
+            formData.append('idConselhoClasse', idConselhoClasse)
+            enviarFormData(formData, processarVinculoCbo)
+        }
+
+
+
+
+
+    </script>
+
+
+{% endblock %}

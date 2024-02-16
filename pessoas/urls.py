@@ -18,4 +18,7 @@ urlpatterns = [
          name='Vincular Colaboradores Setor'),
     path('colaboradores/colaborador/<slug:slug_colaborador>/', views.Colaborador.as_view(), name='Colaborador'),
     path('organizacao-adicionar-setor/<slug:slug_unidade>/', views.CadastrarSetor.as_view(), name='Cadastrar Setor'),
+
+    path('funcoes/', views.FuncoesProfissionais.as_view(), name='funcoes'),
+    path('funcoes/funcao/<slug:slug_funcao>/', views.FuncaoProfissional.as_view(), name='funcao'),
 ]

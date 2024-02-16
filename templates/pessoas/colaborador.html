@@ -7,49 +7,63 @@
     {% include 'nav/nav_path.html' %}
 
     <div class="row">
-        <div class="col-2" id="">
-
-        </div>
+        <div class="col-2" id=""></div>
         <div class="col-8">
             <div class="row" id="linha-titolos">
-                <div class="col">
-                    <h3>{{ colaborador.nome }}</h3>
-                    <h5>CPF: {{ colaborador.cpf }}</h5>
-
-                </div>
-
+                <div class="col"><h3>{{ colaborador.nome }}</h3><h5>CPF: {{ colaborador.cpf }}</h5></div>
             </div>
             <br>
             <div class="row" id="linha-conteudo">
                 <div class="col" id="coluna-conteudo">
                     <div class="row">
-                        <div class="col-8">
-                            <h5>Vínculos:</h5>
+                        <div class="col-8"><h5></h5></div>
+                        <div class="col-4 d-flex justify-content-end">
+                            <input class="btn btn-primary" value="Adicionar Função" 
+                                   onclick="adicionarFuncaoColaborador({{ colaborador.id }})">
                         </div>
-                        <div class="col-4">
-                            <input class="btn btn-primary" onclick="adicionarVinculoColaborador()" value="Adicionar Vínculo">
-
-                        </div>
-
-
                     </div>
-                    <div class="row">
+                <br>
+                    <div class="row" id="linha-funcoes">
                         <div class="col">
-                            {% for vinculo in vinculos_colaborador %}
-                                {{ vinculo.tipo_vinculo }} - {{ vinculo.funcao }}
-                            {% endfor %}
+                        <div class="list-group">
+                            <a class="list-group-item text-center list-group-item-primary active" data-remote="true" id="categoria_0">
+                                Funções
+                            </a>
+                            {% for p in profissoes_colaborador %}
+                                <li class="list-group-item text-center active" style="cursor: pointer; padding-left: 25px" id="li-prof-{{ p.id }}">
+                                <span style="margin-left: 25px;">{{ p.funcao }}{% if p.nome_conselho %}
+                                    - {{ p.nome_conselho }} - {{ p.estado_conselho }}: {{ p.numero_conselho }}
+                                {% endif %}</span>
+                                </li>
+                                <div class="list-group-submenu" id="sub-li-prof-{{ p.id }}">
+                                    <li class="list-group-item sub-item list-group-item-primary" data-parent="#li-prof-{{ p.id }}" style="padding-left: 50px;">
+                                        <span style="margin-left: 75px;">Vinculos</span>
+                                        <span class="fa-solid fa-plus" style="float: right; margin-right: 0; cursor: pointer" onclick="adicionarVinculoColaborador('{{ p.id }}')"></span>
 
+                                    </li>
+                                    {% for v in p.vinculos_colaborador %}
+                                        <li class="list-group-item sub-item list-group-item-light" data-parent="#li-prof-{{ p.id }}" style="padding-left: 150px;">{{ v.vinculo }}</li>
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if not p.vinculos_colaborador %}
+                                    <li class="list-group-item sub-item disabled" ><br></li>
+                                {% endif %}
+                                
+                            {% endfor %}
                         </div>
 
+                            
+                        </div>
                     </div>
+                    <br>
+                    <br>
+
                 </div>
 
             </div>
         </div>
-        <div class="col-2" id="">
-
-        </div>
-
+        <div class="col-2" id=""></div>
     </div>
 
     <br>
@@ -64,53 +78,18 @@
         urlColaboradores = "{% url 'Pessoas:colaboradores' %}";
 
         console.log(urlColaboradores)
+        
+        funcoes = {{ funcoes|safe }};
+        
+        ocupacoes = {{ ocupacoes|safe }};
+        
+        conselhos = {{ conselhos|safe }};
+        
+        estados = {{ estados|safe }};
+        
+        console.log(funcoes)
 
-        function criarModal(idModal, tituloModal, conteudoModal){
-            let modal = document.createElement('div')
-            modal.className = "modal"
-            modal.id= idModal
-
-            let modalDialog = document.createElement('div')
-            modalDialog.className = "modal-dialog"
-
-            let modalContent = document.createElement("div")
-            modalContent.className = "modal-content"
-
-            ///////////////////// CAbeçalho do Modal ///////////////////////////
-            let modalHeader = document.createElement('div')
-            modalHeader.className = "modal-header"
-
-            let modalTitle = document.createElement('H4')
-            modalTitle.className = "modal-title"
-            modalTitle.appendChild(document.createTextNode(tituloModal))
-
-            let btnCloseModal = document.createElement('button')
-            btnCloseModal.type = "button"
-            btnCloseModal.className = "btn-close"
-            btnCloseModal.setAttribute("data-bs-dismiss", "modal")
-
-            modalHeader.appendChild(modalTitle)
-            modalHeader.appendChild(btnCloseModal)
-            ///////////////////////////////////////////////////////////////////
-            /////////////////  Conteudo do Modal  /////////////////////////////
-
-            let modalBody = document.createElement("div")
-            modalBody.className = "modal-body"
-
-            modalBody.appendChild(conteudoModal)
-
-            ///////////////////////////////////////////////////////////////////
-
-            modalContent.appendChild(modalHeader)
-            modalContent.appendChild(modalBody)
-
-            modalDialog.appendChild(modalContent)
-            modal.appendChild(modalDialog)
-
-            return modal
-        }
-
-        function criarConteudoModalVincularColaborador(){
+        function criarConteudoModalVincularColaborador(idProfissional){
             let containerModal = document.createElement('div')
             containerModal.className = "container-fluid"
             containerModal.appendChild(criarOptionsTipoVinculo())
@@ -118,7 +97,7 @@
             return containerModal
         }
 
-        function adicionarVinculoColaborador(){
+        function adicionarVinculoColaborador(idProfissional){
             const idModal = "idModalVincularCoalborador"
 
             if(document.getElementById(idModal)){
@@ -126,7 +105,7 @@
                 modal.show()
             }else{
                 const tituloModal = "Vincular Colaborador"
-                const conteudoModal = criarConteudoModalVincularColaborador()
+                const conteudoModal = criarConteudoModalVincularColaborador(idProfissional)
 
                 let janela_modal = criarModal(idModal, tituloModal, conteudoModal)
 
@@ -222,9 +201,7 @@
 
             return divRadio;
         }
-
-
-
+        
         function criarOptionsTipoVinculo() {
             let objetoHTML = document.createElement('div');
             objetoHTML.className = "row";
@@ -301,6 +278,207 @@
             vinculos_validos = {"funeas":linhaVincularFuneas, "contrato":linhaVincularContrato, "academico":linhaVincularAcademico}
 
             container_atualizar.appendChild(vinculos_validos[tipoVinculoSelecionado]())
+
+        }
+
+        function adicionarFuncaoColaborador(idPessoaFisica){
+            const idModal = "idAdicionarFuncaoColaborador"
+
+            if(document.getElementById(idModal)){
+                let modal = new bootstrap.Modal(document.getElementById(idModal))
+                modal.show()
+            }else{
+                const tituloModal = "Vincular Colaborador"
+                
+                const conteudoModal = criarConteudoModalFuncaoColaborador(idPessoaFisica)
+
+                let janela_modal = criarModal(idModal, tituloModal, conteudoModal)
+
+                document.body.appendChild(janela_modal)
+                modal = new bootstrap.Modal(janela_modal)
+                modal.show()
+
+            }
+
+
+        }
+        
+        function criarConteudoModalFuncaoColaborador(idPessoaFisica){
+            let containerModal = document.createElement('div')
+            containerModal.className = "container-fluid"
+            containerModal.appendChild(criarSelectFuncao(idPessoaFisica))
+            return containerModal
+        }
+
+        
+        
+        function handleAlterarFuncaoVinculo(event){
+            let idFuncaoSelecionada = event.target.value
+            const funcao = funcoes.find(element => element.id === Number(idFuncaoSelecionada))
+            let containerDados = document.getElementById('containerDadosConselhoProfissional')
+            while (containerDados.firstChild) {containerDados.removeChild(containerDados.firstChild)}
+
+            if(funcao.conselhos[0]){
+                const labelConselho = document.createElement('label')
+                labelConselho.appendChild(document.createTextNode("Conselho de Classe"))
+                labelConselho.setAttribute('for',  `idLinhaConselho`)
+                
+                const selectConselho = document.createElement('select')
+                selectConselho.localName = "form-select"
+                selectConselho.className = "form-control"
+                selectConselho.id = `selectConselhoFuncao-${idFuncaoSelecionada}`
+                selectConselho.name = "conselhoSelecionado"
+                selectConselho.required = true
+                
+                let opcao_disabled = document.createElement('option');
+                opcao_disabled.text = "Selecione um Conselho"
+                
+                selectConselho.appendChild(opcao_disabled);
+                
+                for(let c of funcao.conselhos){
+                    const conselho = conselhos.find(element => element.id === Number(c))
+                    let opcao = document.createElement('option');
+                    opcao.value = conselho['id'];
+                    opcao.text = conselho['sigla'];
+                    selectConselho.appendChild(opcao);
+                }
+                
+                let inputNumeroConselho = document.createElement('input')
+                inputNumeroConselho.type = "text"
+                inputNumeroConselho.className = "form-control"
+                inputNumeroConselho.name = "numeroConselho"
+                inputNumeroConselho.id = `inputNumeroConselho`
+                inputNumeroConselho.required = true
+                inputNumeroConselho.placeholder = "Número"
+                
+                const selectEstado = document.createElement('select')
+                selectEstado.localName = "form-select"
+                selectEstado.className = "form-control"
+                selectEstado.id = `selectEstadoConselho`
+                selectEstado.name = "EstadoConselho"
+                selectEstado.required = true
+                
+                for(e of estados){
+                    let opcao = document.createElement('option');
+                    opcao.value = e;
+                    opcao.text = e;
+                    if(e === "PR"){
+                        opcao.selected = true
+                    }
+                    selectEstado.appendChild(opcao);
+                }
+                
+                let linhaConselho = document.createElement('div')
+                linhaConselho.id= "idLinhaConselho"
+                linhaConselho.className = "row"
+                
+                let c1 = document.createElement('div')
+                c1.className = "col"
+                c1.appendChild(selectConselho)
+                
+                let c2 = document.createElement('div')
+                c2.className = "col"
+                c2.appendChild(inputNumeroConselho)
+                
+                let c3 = document.createElement('div')
+                c3.className = "col"
+                c3.appendChild(selectEstado)
+                linhaConselho.append(c1, c2, c3)
+                
+                containerDados.appendChild(labelConselho)
+                containerDados.appendChild(linhaConselho)
+                //containerDados.appendChild(document.createElement('br'))
+            }
+            if(funcao.ocupacoes[0]){
+                
+                const labelOcupacao = document.createElement('label')
+                labelOcupacao.appendChild(document.createTextNode("Ocupação"))
+                labelOcupacao.setAttribute('for', `selectConselhoFuncao-${idFuncaoSelecionada}`)
+                
+                const selectOcupacao = document.createElement('select')
+
+                selectOcupacao.localName = "form-select"
+                selectOcupacao.className = "form-control"
+                selectOcupacao.id = `selectConselhoFuncao-${idFuncaoSelecionada}`
+                selectOcupacao.name = "ocupacaoSelecionada"
+                selectOcupacao.required = true
+                
+                let opcao_disabled = document.createElement('option');
+                opcao_disabled.text = "Selecione uma Ocupação (cbo)"
+
+                selectOcupacao.appendChild(opcao_disabled);
+                
+                for(let o of funcao.ocupacoes){
+                    const ocupacao = ocupacoes.find(element => element.id === Number(o))
+                    let opcao = document.createElement('option');
+                    opcao.value = ocupacao['id'];
+                    opcao.text = ocupacao['titulo'];
+                    selectOcupacao.appendChild(opcao);
+                }
+                
+                containerDados.appendChild(labelOcupacao)
+                containerDados.appendChild(selectOcupacao)
+                //containerDados.appendChild(document.createElement('br'))
+            }
+            console.log(funcao)
+        }
+        
+        function criarSelectFuncao(idPessoaFisica) {
+            let objetoHTML = document.createElement('div');
+            objetoHTML.className = "row";
+
+            let divCol = document.createElement('div');
+            divCol.className = "col";
+
+            let h5 = document.createElement('h5');
+            h5.appendChild(document.createTextNode("Selecione A função: "));
+
+            divCol.appendChild(h5);
+            
+            let form = criarFormularioBase("vincularFuncaoColaborador")
+
+            let selectFuncoes = document.createElement('select')
+            selectFuncoes.localName = "form-select"
+            selectFuncoes.className = "form-control"
+            selectFuncoes.name = "funcaoSelecionada"
+            selectFuncoes.id = `selectFuncao-${idPessoaFisica}`
+            selectFuncoes.required = true
+            selectFuncoes.addEventListener("change", handleAlterarFuncaoVinculo)
+            
+            let opcao_disabled = document.createElement('option');
+            opcao_disabled.text = "Selecione uma Função"
+            
+            selectFuncoes.appendChild(opcao_disabled);
+
+            for(let f of funcoes){
+                let opcao = document.createElement('option');
+                opcao.value = f['id'];
+                opcao.text = f['nome'];
+                selectFuncoes.appendChild(opcao);
+            }
+            
+            let contarinerOpcoes = document.createElement('div')
+            contarinerOpcoes.className = "container-fluid"
+            contarinerOpcoes.id = "containerDadosConselhoProfissional"
+
+            let botaoBuscar = document.createElement('button');
+            botaoBuscar.type = "submit"
+            
+            botaoBuscar.setAttribute('class', 'btn btn-success');
+            botaoBuscar.appendChild(document.createTextNode("Adicionar Função"))
+            
+            form.append(selectFuncoes)
+            
+            //form.appendChild(document.createElement('br'))
+            form.appendChild(contarinerOpcoes)
+            form.appendChild(document.createElement('br'))
+            form.appendChild(botaoBuscar)
+            divCol.appendChild(form)
+            
+
+            objetoHTML.appendChild(divCol);
+
+            return objetoHTML;
 
         }
 

@@ -1,0 +1,10 @@
+
+
+<nav class="navbar navbar-light">
+    <ul class="navbar-nav">
+        <a class="nav-link" href="{% url 'Pessoas:funcoes' %}"> Funções </a>
+        {% for f in funcoes %}
+            <a class="nav-link" href="{% url 'Pessoas:funcao' slug_funcao=f.slug %}"> {{ f.nome }} </a>
+        {% endfor %}
+    </ul>
+</nav>

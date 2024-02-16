@@ -18,6 +18,7 @@ class DadosConselhoProfissional(models.Model):
     numero = models.CharField(max_length=30)
 
 
+
 class RegimeEscala(models.TextChoices):
     PRESENCIAL = "P", _("presencial")
     SOBREAVISO = "S", _("sobreaviso")
@@ -25,7 +26,7 @@ class RegimeEscala(models.TextChoices):
 
 class Escala(models.Model):
     escala_ativa = models.BooleanField(default=True)
-    regime_escala = models.CharField(choices=RegimeEscala.choices, max_length=2)
+    regime_escala = models.CharField(choices=RegimeEscala, max_length=10)
 
     setor = models.ForeignKey(Setor, on_delete=models.CASCADE)
     nome_escala = models.CharField(max_length=50, verbose_name="Nome da Escala")

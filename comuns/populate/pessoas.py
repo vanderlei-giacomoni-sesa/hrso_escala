@@ -49,6 +49,30 @@ FUNCOES_CBO = {
     "TERAPEUTA OCUPACIONAL": "351610"
 }
 
+FUNCAO_CBO_CONSELHO = {
+    "ADMINISTRADOR": {"CBO":  "252105", "CONSELHO": "CRA"},
+    "ASSISTENTE DE FARMACIA": {"CBO":  "521130", "CONSELHO": None},
+    "ASSISTENTE SOCIAL": {"CBO":  "251605", "CONSELHO": "CRESS"},
+    "AUXILIAR ADMINISTRATIVO": {"CBO":  "411010", "CONSELHO": None},
+    "AUXILIAR DE MANUTENCAO": {"CBO":  "514310", "CONSELHO": None},
+    "AUXILIAR OPERACIONAL": {"CBO":  "514310", "CONSELHO": None},
+    "ENFERMEIRO": {"CBO":  "223505", "CONSELHO": "COREN"},
+    "FARMACEUTICO": {"CBO":  "223405", "CONSELHO": "CRF"},
+    "FISIOTERAPEUTA": {"CBO":  "223605", "CONSELHO": "CREFITO"},
+    "FONOAUDIOLOGO": {"CBO":  "223810", "CONSELHO": "CREFONO"},
+    "MEDICO": {"CBO":  "225125", "CONSELHO": "CRM"},
+    "MOTORISTA": {"CBO":  "782310", "CONSELHO": None},
+    "NUTRICIONISTA": {"CBO":  "223710", "CONSELHO": "CRN"},
+    "PSICOLOGO": {"CBO":  "251520", "CONSELHO": "CRP"},
+    "TECNICO ADMINISTRATIVO": {"CBO":  "351305", "CONSELHO": None},
+    "TECNICO DE ENFERMAGEM": {"CBO":  "322230", "CONSELHO": "COREN"},
+    "TECNICO DE LABORATORIO": {"CBO":  "515215", "CONSELHO": None},
+    "TECNICO DE RADIOLOGIA": {"CBO":  "324120", "CONSELHO": "CRTR"},
+    "TECNICO DE SEGURANCA DO TRABALHO": {"CBO":  "351605", "CONSELHO": None},
+    "TELEFONISTA": {"CBO":  "422205", "CONSELHO": None},
+    "TERAPEUTA OCUPACIONAL": {"CBO":  "351610", "CONSELHO": "CREFITO"},
+}
+
 def processar_arquivos_meta_4():
     from unidecode import unidecode
     pasta_arquivos = os.path.join(BASE_DIR, "comuns\\populate\\meta4")
@@ -179,4 +203,44 @@ def processar_arquivos_meta_4():
         ili += 1
 
 
+def criar_conselhos():
+    CONSELHOS_CRIAR = [
+        ('COREN', 'Conselho Regional de Enfermagem'),
+        ('CRF', 'Conselho Regional de Farmácia'),
+        ('CRM', 'Conselho Regional de Medicina'),
+        ('CREFITO', 'Conselho Regional de Fisioterapia e Terapia Ocupacional'),
+        ("CREFONO", "Conselho Regional de Fonoaudiologia"),
+        ('CRP', 'Conselho Regional de Psicologia'),
+        ('CRO', 'Conselho Regional de Odontologia'),
+        ('CRN', 'Conselho Regional de Nutrição'),
+        ('CRTR', 'Conselho Regional de Técnicos em Radiologia'),
+        ('CRESS', 'Conselho Regional de Serviço Social'),
+        ('CRBM', 'Conselho Regional de Biomedicina'),
+        ('CRA', 'Conselho Regional de Administração')
+    ]
+
+    from comuns.models import ConselhoProfissional
+    for c in CONSELHOS_CRIAR:
+        conselho, crated = ConselhoProfissional.objects.get_or_create(sigla=c[0], defaults={"nome": c[1]})
+
+
+def definir_funcoes_conselhos_ocupacoes():
+    from comuns.models import ConselhoProfissional
+    for f in FUNCAO_CBO_CONSELHO.keys():
+        cbo = FUNCAO_CBO_CONSELHO[f]['CBO']
+        conselho = FUNCAO_CBO_CONSELHO[f]['CONSELHO']
+        funcao, created = Funcao.objects.get_or_create(nome=f)
+        ocupacao = Ocupacao.objects.get(codigo_cbo=cbo)
+        try:
+            conselho = ConselhoProfissional.objects.get(sigla=conselho) if conselho else None
+
+            if conselho:
+                funcao.conselhos_permitidos.add(conselho)
+        except Exception as e:
+            print(e)
+
+        try:
+            funcao.ocupacoes_permitidas.add(ocupacao)
+        except Exception as e:
+            print(e)
 

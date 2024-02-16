@@ -12,7 +12,7 @@ from comuns.models import PeriodoReferencia, Fornecedor, Funcao, Ocupacao
 
 
 class PessoaFisica(models.Model):
-    data_cadastro = models.DateField()
+    data_cadastro = models.DateField(auto_now=True)
     nome = models.CharField(max_length=200)
     cpf = BRCPFField()
     slug = models.SlugField(max_length=250)
@@ -40,6 +40,7 @@ class Profissional(models.Model):
     pessoa_fisica = models.ForeignKey(PessoaFisica, on_delete=models.PROTECT)
     funcao = models.ForeignKey(Funcao, on_delete=models.PROTECT)
     cbo = models.ForeignKey(Ocupacao, on_delete=models.PROTECT)
+    ativo = models.BooleanField(default=True)
 
 
 class Unidade(models.Model):

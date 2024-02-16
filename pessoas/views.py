@@ -3,19 +3,28 @@ from django.views import View
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.db.models import Q, F
 from django.http import JsonResponse
 from django.shortcuts import resolve_url
 
+from django.db.models.functions import Coalesce
+from django.db.models.expressions import Value
+
+from localflavor.br.br_states import STATE_CHOICES
+
+from escala_geral.models import DadosConselhoProfissional
+
 from pessoas.ferramentas.organizacao import listar_setores_unidade, buscar_pessoas_fisicas_com_vinculo_unidade, \
     buscar_pessoas_fisicas_com_vinculo_setor
-from pessoas.ferramentas.pessoas import buscar_vinculos_colaborador
+from pessoas.ferramentas.pessoas import (
+    buscar_vinculos_colaborador, busca_web_pessoa_fisica, acrescentar_vinculos_profissional)
 from pessoas.forms import FormularioUnidade, FormularioNovoSetorUnidade, FormularioSetorUnidade
 import json
 
 from pessoas.models import PessoaFisica, Unidade, PessoaFisicaUsuario, VinculoPessoaFisicaSetor, Setor, \
     VinculoFuncional, Profissional, VinculoColaboradorUnidade
-from comuns.models import Funcao
+from comuns.models import Funcao, ConselhoProfissional, Ocupacao
 from comuns.ferramentas.gerais import retornar_valor_nao_nulo
 
 # Create your views here.
@@ -76,15 +85,24 @@ class BaseViewOrganizacao(LoginRequiredMixin, View):
 
 class CoalboradoresInicio(BaseViewOrganizacao):
 
+    def processar_post(self, request, post):
+        tipos_acao = {"buscar-pessoas": busca_web_pessoa_fisica}
+        return tipos_acao[post['tipo-acao']](request, post)
+
+
     def get(self, request, *args, **kwargs):
 
         self.nav_path = [{"nome": "Colaboradores",
-                          'href:': "#",
+                          'href': "#",
                           'ativo': True, 'options': None},
                          ]
         self.context['nav_path'] = self.nav_path
 
         return render(request, 'pessoas/colaboradores_inicio.html', self.context)
+
+    def post(self, request, *args, **kwargs):
+        post = request.POST.copy().dict()
+        return self.processar_post(request, post)
 
 
 class Colaborador(BaseViewOrganizacao):
@@ -92,22 +110,72 @@ class Colaborador(BaseViewOrganizacao):
         super().__init__(**kwargs)
         self.colaborador = None
 
+    def vincular_funcao_colaborador(self, request, post):
+        funcao_vincular = Funcao.objects.get(id=int(post['funcaoSelecionada']))
+
+        conselho = ConselhoProfissional.objects.get(
+            id=int(post['conselhoSelecionado'])) if "conselhoSelecionado" in post else None
+
+        numero_conselho = post['numeroConselho'] if "numeroConselho" in post else None
+
+        estado_conselho = post['EstadoConselho'] if "EstadoConselho" in post else None
+
+        ocupacao = Ocupacao.objects.get(id=int(post['ocupacaoSelecionada']))
+
+        print("Dados Vinculo", funcao_vincular, conselho, estado_conselho, numero_conselho)
+
+        p, c = Profissional.objects.update_or_create(
+            funcao=funcao_vincular, pessoa_fisica=self.colaborador, cbo=ocupacao,
+            defaults={'ativo': True})
+
+        if conselho and estado_conselho and numero_conselho:
+            dc, dcc = DadosConselhoProfissional.objects.get_or_create(
+                profissional=p, conselho=conselho, estado_conselho=estado_conselho, numero=numero_conselho)
+
+        return redirect('Pessoas:Colaborador', slug_colaborador=self.colaborador.slug)
+
+    def processar_post(self, request, post):
+        tipos_acao = {"vincularFuncaoColaborador": self.vincular_funcao_colaborador}
+        return tipos_acao[post['tipo-acao']](request, post)
+
+    def post(self, request, *args, **kwargs):
+        self.colaborador = PessoaFisica.objects.get(slug=kwargs['slug_colaborador'])
+        post = request.POST.copy().dict()
+        return self.processar_post(request, post)
+
     def get(self, request, *args, **kwargs):
-        print(kwargs['slug_colaborador'])
         self.colaborador = PessoaFisica.objects.get(slug=kwargs['slug_colaborador'])
         self.nav_path = [{"nome": "Colaboradores",
-                          'href:': resolve_url("Pessoas:colaboradores"),
+                          'href': resolve_url("Pessoas:colaboradores"),
                           'ativo': False, 'options': None},
                          {"nome": self.colaborador.nome, 'href': "#", 'ativo': True, 'options': None}]
         self.context['nav_path'] = self.nav_path
+        print(self.context['nav_path'])
         self.context['colaborador'] = self.colaborador
+
+        self.context['profissoes_colaborador'] = [acrescentar_vinculos_profissional(p) for p in Profissional.objects.filter(
+            pessoa_fisica=self.colaborador, funcao__ativa=True).values('id').annotate(
+            funcao=F('funcao__nome'), nome_conselho=F('dadosconselhoprofissional__conselho__sigla'),
+            estado_conselho=F('dadosconselhoprofissional__estado_conselho'),
+            numero_conselho=F('dadosconselhoprofissional__numero'))]
+
         self.context['vinculos_colaborador'] = buscar_vinculos_colaborador(self.colaborador)
+
+        self.context['funcoes'] = list(
+            Funcao.objects.filter(ativa=True).values('nome', 'id').annotate(
+                ocupacoes=ArrayAgg('ocupacoes_permitidas__id', distinct=True),
+                conselhos=ArrayAgg('conselhos_permitidos__id', distinct=True)
+            ))
+        self.context['ocupacoes'] = list(Ocupacao.objects.filter().values('codigo_cbo', 'id', 'titulo'))
+        self.context['conselhos'] = list(ConselhoProfissional.objects.filter().values('id', 'sigla', 'nome'))
+        self.context['estados'] = [e[0] for e in STATE_CHOICES]
+
         return render(request, 'pessoas/colaborador.html', self.context)
 
 
 class Organizacao(BaseViewOrganizacao):
     def get(self, request):
-        self.nav_path = [{"nome": "Organização", 'href:': "#", 'ativo': True, 'options': None}]
+        self.nav_path = [{"nome": "Organização", 'href': resolve_url("Pessoas:organizacao"), 'ativo': True, 'options': None}]
         self.context['nav_path'] = self.nav_path
         return render(request, 'pessoas/organizacao.html', self.context)
 
@@ -123,8 +191,9 @@ class ViewUnidade(BaseViewOrganizacao):
         return redirect('Pessoas:Gerenciar Unidade', slug_unidade=self.unidade.slug)
 
     def get(self, request, *args, **kwargs):
-        self.nav_path = [{"nome": "Organização", 'href:': "#", 'ativo': False, 'options': None},
-                         {"nome": self.unidade.nome_unidade, 'href': resolve_url('Pessoas:Gerenciar Unidade', slug_unidade=self.unidade.slug), 'ativo': True, 'options': None}]
+        self.nav_path = [{"nome": "Organização", 'href': resolve_url('Pessoas:organizacao'), 'ativo': False, 'options': None},
+
+                         {"nome": self.unidade.nome_unidade, 'href': "#", 'ativo': True, 'options': None}]
         self.context['nav_path'] = self.nav_path
         form = FormularioUnidade(instance=self.unidade)
         self.context['form'] = form
@@ -143,11 +212,11 @@ class ViewSetor(BaseViewOrganizacao):
         return redirect('Pessoas:Gerenciar Setor', slug_unidade=kwargs['slug_unidade'], slug_setor=kwargs['slug_setor'])
 
     def get(self, request, *args, **kwargs):
-        self.nav_path = [{"nome": "Organização", 'href:': "#", 'ativo': False, 'options': None},
+        self.nav_path = [{"nome": "Organização", 'href': resolve_url("Pessoas:organizacao"), 'ativo': False, 'options': None},
                          {"nome": self.unidade.nome_unidade,
                           'href': resolve_url('Pessoas:Gerenciar Unidade', slug_unidade=self.unidade.slug),
                           'ativo': False, 'options': None},
-                         {"nome": self.setor.nome_setor, 'href:': "#", 'ativo': True, 'options': None}]
+                         {"nome": self.setor.nome_setor, 'href': "#", 'ativo': True, 'options': None}]
         self.context['nav_path'] = self.nav_path
         form = FormularioSetorUnidade(instance=self.setor)
         self.context['form'] = form
@@ -156,16 +225,25 @@ class ViewSetor(BaseViewOrganizacao):
 
 class ViewColaboradoresUnidade(BaseViewOrganizacao):
     def get(self, request, *args, **kwargs):
-        self.nav_path = [{"nome": "Organização", 'href:': "#", 'ativo': False, 'options': None},
+        self.nav_path = [{"nome": "Colaboradores", 'href': resolve_url("Pessoas:colaboradores"), 'ativo': False, 'options': None},
                          {"nome": self.unidade.nome_unidade,
                           'href': resolve_url('Pessoas:Colaboradores Unidade', slug_unidade=self.unidade.slug),
                           'ativo': True, 'options': None},
                          ]
         self.context['nav_path'] = self.nav_path
 
-        self.context['colaboradores'] = list(buscar_pessoas_fisicas_com_vinculo_unidade(self.unidade.id))
+        self.context['colaboradores'] = None # list(buscar_pessoas_fisicas_com_vinculo_unidade(self.unidade.id))
+        self.context['unidade'] = self.unidade
 
         return render(request, 'pessoas/colaboradores_unidade.html', self.context)
+
+    def processar_post(self, request, post):
+        tipos_acao = {"buscar-pessoas": busca_web_pessoa_fisica}
+        return tipos_acao[post['tipo-acao']](request, post)
+
+    def post(self, request, *args, **kwargs):
+        post = request.POST.copy().dict()
+        return self.processar_post(request, post)
 
 
 class ViewColaboradoresSetor(BaseViewOrganizacao):
@@ -186,7 +264,7 @@ class ViewColaboradoresSetor(BaseViewOrganizacao):
         return JsonResponse({'status': 'ok', 'idVinculoColaboradorSetor': post['idVinculoColaboradorSetor']}, safe=False)
 
     def get(self, request, *args, **kwargs):
-        self.nav_path = [{"nome": "Organização", 'href:': "#", 'ativo': False, 'options': None},
+        self.nav_path = [{"nome": "Colaboradores", 'href': resolve_url("Pessoas:colaboradores"), 'ativo': False, 'options': None},
                          {"nome": self.unidade.nome_unidade,
                           'href': resolve_url('Pessoas:Colaboradores Unidade', slug_unidade=self.unidade.slug),
                           'ativo': False, 'options': None},
@@ -203,7 +281,6 @@ class ViewColaboradoresSetor(BaseViewOrganizacao):
         return render(request, 'pessoas/colaboradores_setor.html', self.context)
 
     def post(self, request, *args, **kwargs):
-
         post = request.POST.copy().dict()
         return self.processar_post(request, post)
 
@@ -211,10 +288,8 @@ class ViewColaboradoresSetor(BaseViewOrganizacao):
 class ViewColaboradoresSetorVincular(BaseViewOrganizacao):
 
     def buscar_colaborador(self, request, post):
-        filtro_nome = Q(
-            pessoa_fisica__nome__icontains=post['informacoes-buscar'],
-            vinculofuncional__vinculocolaboradorunidade__unidade=self.unidade
-        )
+        filtro_nome = Q(pessoa_fisica__nome__icontains=post['informacoes-buscar'],
+                        vinculofuncional__vinculocolaboradorunidade__unidade=self.unidade)
 
         filtro_funcao = Q(funcao=post['informacoes-buscar'],
                           vinculofuncional__vinculocolaboradorunidade__unidade=self.unidade)
@@ -260,14 +335,14 @@ class ViewColaboradoresSetorVincular(BaseViewOrganizacao):
 
     def get(self, request, *args, **kwargs):
         print("get", request)
-        self.nav_path = [{"nome": "Organização", 'href:': "#", 'ativo': False, 'options': None},
+        self.nav_path = [{"nome": "Colaboradores", 'href': resolve_url("Pessoas:colaboradores"), 'ativo': False, 'options': None},
                          {"nome": self.unidade.nome_unidade,
                           'href': resolve_url('Pessoas:Colaboradores Unidade', slug_unidade=self.unidade.slug),
                           'ativo': False, 'options': None},
                          {"nome": self.setor.nome_setor,
                           'href': resolve_url('Pessoas:Colaboradores Setor', slug_unidade=self.unidade.slug,
                                               slug_setor=self.setor.slug), 'ativo': False, 'options': None},
-                         {"nome": "Vincular Colaboradores", 'href:': "#", 'ativo': True, 'options': None}
+                         {"nome": "Vincular Colaboradores", 'href': "#", 'ativo': True, 'options': None}
 
                          ]
         self.context['nav_path'] = self.nav_path
@@ -294,7 +369,7 @@ class CadastrarSetor(LoginRequiredMixin, View):
         return super().dispatch(request, *args, **kwargs)
 
     def processar_post(self, request, post):
-        print('processar_post', post)
+
         acoes = {'novo-setor-setor': self.novo_setor_setor,
                  'novo-setor-unidade': self.novo_setor_unidade,
                  'salvar-novo-setor': self.salvar_novo_setor,
@@ -334,6 +409,7 @@ class CadastrarSetor(LoginRequiredMixin, View):
                                                                 'setor': self.setor,
                                                                 'form': form})
 
+
     def post(self, request, *args, **kwargs):
         post = request.POST.copy().dict()
         return self.processar_post(request, post)
@@ -341,3 +417,90 @@ class CadastrarSetor(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         return redirect('Pessoas:organizacao')
 
+
+class BaseViewFuncao(LoginRequiredMixin, View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.funcao = None
+        self.funcoes = None
+        self.context = None
+    def dispatch(self, request, *args, **kwargs):
+        if 'slug_funcao' in kwargs:
+            self.funcao = Funcao.objects.get(slug=kwargs['slug_funcao'])
+        self.funcoes = Funcao.objects.all().values('id', 'nome', 'slug', 'ativa')
+
+        self.context = {'funcao': self.funcao, 'funcoes': self.funcoes}
+
+        return super().dispatch(request, *args, **kwargs)
+
+
+class FuncoesProfissionais(BaseViewFuncao):
+    def get(self, request, *args, **kwargs):
+        self.nav_path = [
+            {"nome": "Funções", 'href': '#', 'ativo': True, 'options': None}]
+        self.context['nav_path'] = self.nav_path
+
+        return render(request, 'pessoas/funcao/funcoes.html', context=self.context)
+
+
+class FuncaoProfissional(BaseViewFuncao):
+
+    def vincular_cbo(self, request, post):
+        ocupacao = Ocupacao.objects.get(id=post['idCbo'])
+        self.funcao.ocupacoes_permitidas.add(ocupacao)
+        return JsonResponse({'status': 'ok'}, safe=False)
+
+    def vincular_conselho(self, request, post):
+        conselho = ConselhoProfissional.objects.get(id=post['idConselhoClasse'])
+        self.funcao.conselhos_permitidos.add(conselho)
+        return JsonResponse({'status': 'ok'}, safe=False)
+
+    def desvincular_cbo(self, request, post):
+        ocupacao = Ocupacao.objects.get(id=post['idCbo'])
+        self.funcao.ocupacoes_permitidas.remove(ocupacao)
+        return JsonResponse({'status': 'ok'}, safe=False)
+
+    def desvincular_conselho(self, request, post):
+        conselho = ConselhoProfissional.objects.get(id=post['idConselhoClasse'])
+        print(conselho)
+        self.funcao.conselhos_permitidos.remove(conselho)
+        return JsonResponse({'status': 'ok'}, safe=False)
+
+    def processar_post(self, request, post):
+        acoes = {'vincularCbo': self.vincular_cbo,
+                 'vincularConselhoClasse': self.vincular_conselho,
+                 'desvincularCbo': self.desvincular_cbo,
+                 'desvincularConselhoClasse': self.desvincular_conselho,
+                 }
+        return acoes[post['tipo-acao']](request, post)
+
+
+    def get(self, request, *args, **kwargs):
+        self.nav_path = [
+            {"nome": "Funções", 'href': '#', 'ativo': None, 'options': None},
+        {"nome": f"{self.funcao.nome}", 'href': '#', 'ativo': True, 'options': None}]
+
+        self.context['nav_path'] = self.nav_path
+
+        self.context['ocupacoes_funcao'] = list(
+            Ocupacao.objects.filter(funcao=self.funcao).values('id', 'codigo_cbo', 'titulo'))
+
+        self.context['ocupacoes'] = list(Ocupacao.objects.filter().exclude(
+            id__in=[o['id'] for o in self.context['ocupacoes_funcao']]
+        ).values('id', 'codigo_cbo', 'titulo'))
+
+        self.context['conselhos_funcao'] = list(
+            ConselhoProfissional.objects.filter(funcao=self.funcao).values('id', 'sigla', 'nome'))
+        self.context['conselhos_profissionais'] = list(
+            ConselhoProfissional.objects.filter().exclude(
+                id__in=[c['id'] for c in self.context['conselhos_funcao']]
+            ).values('id', 'sigla', 'nome'))
+
+        print(self.context['conselhos_profissionais'])
+
+        return render(request, 'pessoas/funcao/funcao.html', context=self.context)
+
+    def post(self, request, *args, **kwargs):
+        post = request.POST.copy().dict()
+        print(post)
+        return self.processar_post(request, post)

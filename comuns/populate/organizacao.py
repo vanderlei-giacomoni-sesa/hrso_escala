@@ -1,5 +1,5 @@
 import datetime
-
+from comuns.populate.pessoas import criar_conselhos
 from pessoas.models import PessoaFisica, Unidade, Fornecedor
 
 def criar_organizacao():
@@ -49,6 +49,7 @@ def criar_organizacao():
 
 def criar_dados_iniciais():
     criar_organizacao()
+    criar_conselhos()
 
     from comuns.populate.pessoas import processar_arquivos_meta_4
     from pessoas.ferramentas.cbo import ler_arquivo_ocupacoes

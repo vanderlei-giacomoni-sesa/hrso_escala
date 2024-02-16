@@ -15,6 +15,9 @@ from pathlib import Path
 import os
 import json
 
+# import ldap
+# from django_auth_ldap.config import LDAPSearch
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -86,6 +89,12 @@ WSGI_APPLICATION = 'hrso_escala.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+#
+# AUTHENTICATION_BACKENDS = [
+# "django_auth_ldap.backend.LDAPBackend",
+#     "django.contrib.auth.backends.ModelBackend",
+# ]
+
 
 DESENVOLVIMENTO = {
     'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -149,5 +158,22 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#
+# AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_DEBUG_LEVEL: 1, ldap.OPT_REFERRALS: 0,}
+#
+# AUTH_LDAP_SERVER_URI = "ldap://10.29.126.5"
+#
+# AUTH_LDAP_BIND_DN = "cn=vanderlei,ou=adm_ti,dc=hrso,dc=br"
+# AUTH_LDAP_BIND_PASSWORD = "seil9527"
+#
+# AUTH_LDAP_ALWAYS_UPDATE_USER = False
+#
+# AUTH_LDAP_USER_SEARCH = LDAPSearch(
+#     "ou=adm_ti,dc=hrso,dc=br", ldap.SCOPE_SUBTREE, "sAMAccountName=%(user)s"
+# )
+#
+# AUTH_LDAP_START_TLS = True
+#
 
 
