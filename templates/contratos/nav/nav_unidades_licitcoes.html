@@ -1,0 +1,9 @@
+<nav class="navbar navbar-light">
+    <ul class="navbar-nav">
+        {% for u in unidades %}
+            <a class="nav-link{% if u.ativa %} active{% endif %}" 
+               href="{% url 'Contratos:Licitacoes Unidade' slug_unidade=u.slug %}">{{ unidade.sigla_unidade }}
+            </a>
+        {% endfor %}
+    </ul>
+</nav>

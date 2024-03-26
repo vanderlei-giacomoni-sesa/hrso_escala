@@ -1,0 +1,99 @@
+{% extends 'contratos/base.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+    
+    {% include 'nav/nav_path.html' %}
+    {% bootstrap_messages %}
+    
+    <h1>Novo Contrato</h1>
+
+    <div class="container">
+        <form method="post">
+            {% csrf_token %}
+        
+        <input id="id_tipo_acao" name="tipo-acao" value="criarNovoContrato" hidden required>
+            {% if fornecedor %}
+                <input id="fornecedor_contratado" name="fornecedor_contratado" value="{{ fornecedor.id }}" hidden required>
+            {% else %}
+                <div class="mb-3">
+                    <label for="fornecedor_contratado" class="form-label">Fornecedor</label>
+                    <select id="fornecedor_contratado" autocomplete="off" required placeholder="Selecione um fornecedor" name="fornecedor_contratado">
+                        <option></option>
+                        {% for fornecedor in options_fornecedores %}
+                            <option value="{{ fornecedor.id }}">{{ fornecedor.razao_social_fornecedor }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            {% if licitacao %}
+                <input id="licitacao_referencia" name="licitacao_referencia" value="{{ licitacao.id }}" hidden required>
+            {% else %}
+                <div class="mb-3">
+                    <label for="fornecedor_contratado" class="form-label">Licitação</label>
+                    <select id="licitacao_referencia" name="licitacao_referencia" autocomplete="off" required
+                            placeholder="Selecione uma licitação">
+                        <option></option>
+                        {% for licitacao in options_licitacao %}
+                            <option value="{{ licitacao.id }}">{{ licitacao.modalidade_licitacao__nome_modalidade }} - {{ licitacao.numero_licitacao }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="numero_contrato" class="form-label">Número do Contrato</label>
+                <input type="text" class="form-control" id="numero_contrato" name="numero_contrato" required>
+            </div>
+        <div class="row">
+            <div class="col">
+                <label for="inicio_vigencia" class="form-label">Início da Vigência</label>
+                <input type="date" class="form-control" id="inicio_vigencia" name="inicio_vigencia" required>
+                
+            </div>
+            <div class="col">
+                <label for="fim_vigencia" class="form-label">Fim de Vigência</label>
+                <input type="date" class="form-control" id="fim_vigencia" name="fim_vigencia" required>
+            </div>
+            
+        </div>
+        <br>
+            <button type="submit" class="btn btn-primary">Criar Contrato</button>
+        </form>
+    
+    </div>
+    
+    <br>
+    <br>
+    
+    
+    <script>
+        {% if not fornecedor %}
+            new TomSelect("#fornecedor_contratado",{
+                create: false,
+                inputClass: 'form-control',
+                dropdownItemClass: 'dropdown-item',
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                }
+            });
+        {% endif %}
+    
+    {% if not licitacao %}
+            new TomSelect("#licitacao_referencia",{
+                create: false,
+                inputClass: 'form-control',
+                dropdownItemClass: 'dropdown-item',
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                }
+            });
+        {% endif %}
+    </script>
+    
+{% endblock %}

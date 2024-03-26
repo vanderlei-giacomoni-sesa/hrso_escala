@@ -8,13 +8,14 @@ def buscar_vinculos_colaborador(colaborador):
     vinculos_colaborador = VinculoFuncional.objects.filter(profissional__pessoa_fisica=colaborador, vinculo_ativo=True)
     return [{'tipo_vinculo': nomear_vinculo_funcional(v),
              'funcao': v.profissional.funcao.nome,
-
+             'id': v.id,
              } for v in vinculos_colaborador]
 
 
 def acrescentar_vinculos_profissional(profissional):
     vinculos_colaborador = VinculoFuncional.objects.filter(profissional__id=profissional['id'], vinculo_ativo=True)
-    profissional['vinculos_colaborador'] = [{'vinculo': nomear_vinculo_funcional(v)} for v in vinculos_colaborador]
+    print(vinculos_colaborador)
+    profissional['vinculos_colaborador'] = [{'vinculo': nomear_vinculo_funcional(v), 'id': v.id} for v in vinculos_colaborador]
     return profissional
 
 

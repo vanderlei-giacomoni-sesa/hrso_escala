@@ -1,0 +1,15 @@
+{% extends 'contratos/base.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+    
+    {% include 'nav/nav_path.html' %}
+    {% bootstrap_messages %}
+    
+    {% include 'contratos/contratos/tabela_contratos.html' %}
+    
+    
+    
+    
+{% endblock %}

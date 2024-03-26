@@ -1,0 +1,85 @@
+{% extends 'contratos/base.html' %}
+
+{% load django_bootstrap5 %}
+
+
+
+{% block conteudo_pagina %}
+    
+    {% include 'nav/nav_path.html' %}
+    
+    {% bootstrap_messages %}
+
+    <div class="row">
+        <div class="col">
+            <div class="d-flex justify-content-end">
+                {% if not licitacao.cadastro_finalizado %}
+                    <form method="post" onsubmit="return confirm('Deseja finalizar a Edição da Licitação?');">{% csrf_token %}
+                        <input name="tipo-acao" value="finalizarEdicaoLicitacao" hidden>
+                        <input type="text" name="finalizar" value="True" hidden>
+                        <button class="btn btn-success" type="submit">Finalizar Edição da Licitação</button>
+                    </form>
+                {% endif %}
+
+            </div>
+        </div>
+        <div class="col">
+            <div class="d-flex justify-content-end">
+                {% if not licitacao.cadastro_finalizado %}
+                    <a class="btn btn-primary" style="cursor: pointer" onclick="novoLote()">Adicionar Lote</a>
+                {% else %}
+                    <a class="btn btn-primary" style="cursor: pointer"
+                       href="{% url 'Contratos:Novo Contrato Licitacao' slug_unidade=unidade.slug slug_licitacao=licitacao.slug %}">
+                        Adicionar Contrato</a>
+                {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+    
+    
+
+    <div class="row">
+        <div class="col-2">
+            {% include 'contratos/nav/nav_licitacoes_unidade.html' %}
+        </div>
+    
+        <div class="col-10">
+            <div class="container-fluid" id="container-tabela-lotes" style="overflow-y: auto">
+                
+                
+            </div>
+            <p><strong>Valor Total da Licitação: </strong> <a id="valor-total-licitacao"></a></p>
+        
+        </div>
+    
+    </div>
+    
+    
+    <script>
+    
+    window.addEventListener('resize', function(event) {
+            ajustarAlturaJanelaLotes('container-tabela-lotes', 124)
+        }, true);
+    
+    numeroUltimoLote = 0;
+    
+    lotesLicitacao = {{ lotes_licitacao|safe }};
+    
+    window.unidadesMedida = {{ unidadesMedida|safe }};
+    
+    var edicaoFinalizada = {{ licitacao.cadastro_finalizado }};
+    
+    
+    console.log(lotesLicitacao);
+    console.log(window.unidadesMedida);
+    
+    tabelaLotesLicitacao(lotesLicitacao)
+    
+    ajustarAlturaJanelaLotes('container-tabela-lotes', 203)
+    
+    </script>
+    
+    
+{% endblock %}

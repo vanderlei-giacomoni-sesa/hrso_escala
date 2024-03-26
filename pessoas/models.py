@@ -41,6 +41,8 @@ class Profissional(models.Model):
     funcao = models.ForeignKey(Funcao, on_delete=models.PROTECT)
     cbo = models.ForeignKey(Ocupacao, on_delete=models.PROTECT)
     ativo = models.BooleanField(default=True)
+    def __str__(self):
+        return self.pessoa_fisica.nome
 
 
 class Unidade(models.Model):

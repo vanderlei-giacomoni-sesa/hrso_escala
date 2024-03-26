@@ -13,7 +13,6 @@ from escala_geral.models import DadosConselhoProfissional, Ocupacao
 
 hrs = 'HOSPITAL REGIONAL DE FRANCISCO BELTRAO'
 
-unidade = Unidade.objects.get(sigla_unidade="HRS")
 
 def string_to_float(string):
     if string == '':
@@ -73,8 +72,10 @@ FUNCAO_CBO_CONSELHO = {
     "TERAPEUTA OCUPACIONAL": {"CBO":  "351610", "CONSELHO": "CREFITO"},
 }
 
+
 def processar_arquivos_meta_4():
     from unidecode import unidecode
+    unidade = Unidade.objects.get(sigla_unidade="HRS")
     pasta_arquivos = os.path.join(BASE_DIR, "comuns\\populate\\meta4")
     sesa = Fornecedor.objects.get(contato_fornecedor="SESA")
     arquivos = [os.path.join(pasta_arquivos, a) for a in os.listdir(pasta_arquivos)]
@@ -210,6 +211,7 @@ def criar_conselhos():
         ('CRM', 'Conselho Regional de Medicina'),
         ('CREFITO', 'Conselho Regional de Fisioterapia e Terapia Ocupacional'),
         ("CREFONO", "Conselho Regional de Fonoaudiologia"),
+        ("CRFa", "Conselho Regional de Fonoaudiologia"),
         ('CRP', 'Conselho Regional de Psicologia'),
         ('CRO', 'Conselho Regional de Odontologia'),
         ('CRN', 'Conselho Regional de Nutrição'),

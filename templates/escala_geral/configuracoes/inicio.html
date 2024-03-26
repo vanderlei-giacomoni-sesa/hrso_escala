@@ -1,0 +1,37 @@
+{% extends 'escala_geral/base.html' %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    <div class="row">
+        <div class="col-3">
+            <nav class="navbar navbar-light">
+                <ul class="navbar-nav">
+                    {% for c in configuracoes %}
+                        <a class="nav-link{% if c.slug in request.META.PATH_INFO %} active{% endif %}" 
+                           href="{{ c.url }}">
+                            {{ c.nome }}
+                        </a>
+                    {% endfor %}
+                </ul>
+                
+            </nav>
+            
+
+        </div>
+        <div class="col-9">
+            
+        </div>
+
+
+    </div>
+    
+    
+    <script>
+    
+    
+    </script>
+
+
+{% endblock %}

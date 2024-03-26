@@ -177,16 +177,21 @@
             tituloCheck.appendChild(document.createTextNode("Vincular"))
 
             const tituloNome = document.createElement('div')
-            tituloNome.setAttribute('class', 'col-6')
+            tituloNome.setAttribute('class', 'col-4')
             tituloNome.appendChild(document.createTextNode("Nome"))
 
             const tituloFuncao = document.createElement('div')
-            tituloFuncao.setAttribute('class', 'col-5')
+            tituloFuncao.setAttribute('class', 'col-4')
             tituloFuncao.appendChild(document.createTextNode("Função"))
+            
+            const tituloVinculo = document.createElement('div')
+            tituloVinculo.setAttribute('class', 'col-3')
+            tituloVinculo.appendChild(document.createTextNode("Vinculo"))
 
             linhaCabecalho.appendChild(tituloCheck)
             linhaCabecalho.appendChild(tituloNome)
             linhaCabecalho.appendChild(tituloFuncao)
+            linhaCabecalho.appendChild(tituloVinculo)
 
             formulario.appendChild(linhaCabecalho)
 
@@ -206,16 +211,19 @@
                 colunaCheck.appendChild(inputCheck)
 
                 const colunaNome = document.createElement('div')
-                colunaNome.setAttribute('class', 'col-6')
+                colunaNome.setAttribute('class', 'col-4')
                 colunaNome.appendChild(document.createTextNode(c.nome))
 
                 const colunaFuncao = document.createElement('div')
-                colunaFuncao.setAttribute('class', 'col-5')
-                colunaFuncao.appendChild(document.createTextNode(c.funcao))
-                linhaColaborador.appendChild(colunaCheck)
-                linhaColaborador.appendChild(colunaNome)
-                linhaColaborador.appendChild(colunaFuncao)
-
+                colunaFuncao.setAttribute('class', 'col-4')
+                colunaFuncao.appendChild(document.createTextNode(`${c.funcao}`))
+                
+                const colunaVinculo = document.createElement('div')
+                colunaVinculo.setAttribute('class', 'col-3')
+                colunaVinculo.appendChild(document.createTextNode(`${c.vinculo}`))
+                
+                linhaColaborador.append(colunaCheck, colunaNome, colunaFuncao, colunaVinculo)
+                
                 formulario.appendChild(linhaColaborador)
             }
 

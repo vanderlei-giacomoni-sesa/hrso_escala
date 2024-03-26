@@ -1,0 +1,13 @@
+<nav class="navbar navbar-light">
+    <ul class="navbar-nav">
+    <div class="navbar-header">
+        <a class="navbar-brand" href="{% url 'Contratos:Licitacoes Unidade' slug_unidade=unidade.slug %}">Licitações {{ unidade.sigla_unidade }}</a>
+    </div>
+        
+        {% for l in licitacoes %}
+            <a class="nav-link{% if l.slug in request.path %} active disabled{% endif %}"
+               href="{% url 'Contratos:Licitacao Unidade' slug_unidade=unidade.slug slug_licitacao=l.slug %}">{{ l.modalidade_licitacao }} {{ l.numero_licitacao }}
+            </a>
+        {% endfor %}
+    </ul>
+</nav>

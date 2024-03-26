@@ -1,0 +1,430 @@
+{% extends 'pessoas/base_app.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    <div class="row">
+        <div class="col-3" id="coluna-nav-setores">
+
+        </div>
+        <div class="col-9">
+            <div class="text-center">
+                <h3>{{ setor.nome_setor }}</h3>
+            </div>
+
+            <div class="text-end">
+                <a class="btn btn-success" style="margin-right: 25px" onclick="adicionarEscala()">Adicionar Escala</a>
+            </div>
+            
+            <div class="container-fluid" id="container-tabela-escalas">
+                
+            </div>
+
+        </div>
+
+    </div>
+
+    <br>
+
+    {% bootstrap_messages %}
+
+    <script>
+        unidades = {{ unidades|safe }};
+
+        idSetor = {{ setor.id|safe }};
+        
+        regimesEscala = {{ regimes_escala|safe }};
+        
+        escalas = {{ escalas|safe }};
+        
+        console.log(regimesEscala, escalas)
+
+        console.log(unidades)
+
+        function adicionarEscala(){
+            const idModal = 'janela-adicionar-escala';
+
+            if(document.getElementById(idModal)){
+                let modal = new bootstrap.Modal(document.getElementById(idModal))
+                modal.show()
+            }else{
+                const tituloModal = "Adicionar Escala ao setor"
+
+                const conteudoModal = criarConteudoModalAdicionarEscala()
+
+                let janela_modal = criarModal(idModal, tituloModal, conteudoModal)
+
+                document.body.appendChild(janela_modal)
+                modal = new bootstrap.Modal(janela_modal)
+                modal.show()
+
+            }
+
+        }
+
+        function criarConteudoModalAdicionarEscala(){
+            const containerJanela = document.createElement('div');
+            containerJanela.setAttribute('class', 'container-fluid');
+
+            const formulario = criarFormularioBase("AdicionarEscala")
+
+            const input1 = document.createElement('input');
+            input1.setAttribute('type', 'hidden');
+            input1.setAttribute('name', 'id_setor');
+            input1.setAttribute('value', idSetor);
+            
+            const idRegimeEscala = "idRegimeEscala"
+            
+            const labelRegimeEscala = document.createElement("label")
+            labelRegimeEscala.className = "form-label"
+            labelRegimeEscala.setAttribute("for", idRegimeEscala)
+            labelRegimeEscala.appendChild(document.createTextNode(`Selecione o Regime da Escala`))
+            
+            const regimeEscala = document.createElement("select")
+            regimeEscala.id = idRegimeEscala
+            regimeEscala.setAttribute('name', 'regimeEscala')
+            regimeEscala.className = "form-select"
+            regimeEscala.style.marginBottom = "1rem"
+            regimeEscala.required = true
+            
+            for(r of regimesEscala){
+                let optionRegime = document.createElement('option')
+                optionRegime.value = r.value
+                optionRegime.appendChild(document.createTextNode(`${r.label}`))
+                regimeEscala.appendChild(optionRegime)
+            }
+            const idNomeEscala = "idNomeEscala"
+            
+            const labelNomeEscala = document.createElement("label")
+            labelNomeEscala.className = "form-label"
+            labelNomeEscala.setAttribute("for", idNomeEscala)
+            labelNomeEscala.appendChild(document.createTextNode(`Informe o Nome da Escala`))
+            
+            
+             const inputNomeEscala = document.createElement('input');
+            inputNomeEscala.setAttribute('name', 'nomeEscala');
+            inputNomeEscala.className = "form-control"
+            inputNomeEscala.type = "text"
+            inputNomeEscala.style.marginBottom = "1rem"
+            inputNomeEscala.required = true
+            
+            const adicionar = document.createElement("button")
+            adicionar.appendChild(document.createTextNode("Adicionar"))
+            adicionar.className = "btn btn-primary"
+            adicionar.type = "submit"
+            adicionar.style.marginBottom = "5px"
+            
+            
+            formulario.append(input1, labelRegimeEscala, regimeEscala, labelNomeEscala, inputNomeEscala, adicionar)
+            
+            containerJanela.appendChild(formulario)
+
+            return containerJanela
+        }
+
+        function criarNavUnidadeSetores(unidades){
+            let navbarLight = document.createElement('nav')
+            navbarLight.className = "navbar navbar-light"
+
+            let ulNavbar = document.createElement('ul')
+            ulNavbar.className = "navbar-nav"
+            for(let unidade of unidades){
+                let aUnidade = document.createElement('a')
+                if(unidade.ativa){
+                    aUnidade.className = "nav-link active"
+                }else{
+                    aUnidade.className = "nav-link"
+                }
+                aUnidade.href = `{% url 'Pessoas:organizacao' %}${unidade.slug}`
+                aUnidade.innerHTML = unidade.nome_unidade
+                ulNavbar.appendChild(aUnidade)
+                let setores = unidade.setores_unidade
+
+                let navSetors = criarNavSetoresEscala(setores, unidade.slug)
+                ulNavbar.append(navSetors)
+            }
+
+            navbarLight.appendChild(ulNavbar)
+
+            return navbarLight
+        }
+
+        function criarNavSetoresEscala(setores, slug_unidade){
+            let divContainer = document.createElement('div')
+            divContainer.className = "container-fluid"
+
+            let navbarLight = document.createElement('nav')
+            navbarLight.className = "navbar navbar-light"
+
+            let ulNavbar = document.createElement('ul')
+            ulNavbar.className = "navbar-nav"
+            for(let setor of setores){
+                let liSetor = document.createElement('li')
+                liSetor.className = "nav-item"
+
+                let aSetor = document.createElement('a')
+                if (setor['setor_ativo'] === true){
+                    aSetor.className = "nav-link active"
+                }else{
+                    aSetor.className = "nav-link"
+                }
+                aSetor.innerHTML = setor.nome_setor
+                aSetor.href = `{% url 'Pessoas:organizacao' %}${slug_unidade}/${setor.slug}/escalas/`
+
+
+                liSetor.appendChild(aSetor)
+                ulNavbar.appendChild(liSetor)
+                if(setor.setores_setor){
+                    let navSetoresSetor = criarNavSetoresEscala(setor.setores_setor, slug_unidade)
+                    ulNavbar.appendChild(navSetoresSetor)
+                }
+            }
+            navbarLight.appendChild(ulNavbar)
+
+            divContainer.appendChild(navbarLight)
+
+            return divContainer
+        }
+
+        function tabelaEscalasSetor(escalas){
+            let containerTabela = document.getElementById('container-tabela-escalas')
+            for(let escala of escalas){
+                console.log(escalas)
+                let linhaEscala = criarLinhaEscala(escala)
+                containerTabela.appendChild(linhaEscala)
+                
+            }
+        }
+
+        function criarLinhaEscala(escala) {
+
+            let LinhaEscala = document.createElement('div')
+            LinhaEscala.setAttribute('class', 'row')
+            LinhaEscala.style.paddingTop = "1rem"
+            LinhaEscala.style.paddingBottom = "1rem"
+            LinhaEscala.setAttribute('id', `linhaEscala-${escala['id']}`)
+            
+            let colunaConteudoEscala = document.createElement('div')
+            colunaConteudoEscala.setAttribute('class', 'col')
+
+            let linhaDadosEscala = document.createElement('div')
+            linhaDadosEscala.setAttribute('class', 'row')
+
+            let linhaEquipesEscala = document.createElement('div')
+            linhaEquipesEscala.setAttribute('class', 'row')
+
+            let coluna1DadosEscala = document.createElement('div')
+            coluna1DadosEscala.setAttribute('class', 'col-2')
+            let conteudoColuna1DadosEscala = document.createElement('strong')
+            conteudoColuna1DadosEscala.appendChild(document.createTextNode('Regime: '))
+            coluna1DadosEscala.appendChild(conteudoColuna1DadosEscala)
+            coluna1DadosEscala.appendChild(document.createTextNode(escala['regime_escala']))
+
+            let coluna2DadosEscala = document.createElement('div')
+            coluna2DadosEscala.setAttribute('class', 'col-3')
+
+            let conteudoColuna2DadosEscala = document.createElement('strong')
+            conteudoColuna2DadosEscala.appendChild(document.createTextNode('Nome da Escala: '))
+            coluna2DadosEscala.appendChild(conteudoColuna2DadosEscala)
+            coluna2DadosEscala.appendChild(document.createTextNode(escala['nome_escala']))
+
+            let coluna3DadosEscala = document.createElement('div')
+            coluna3DadosEscala.setAttribute('class', 'col-2')
+            let conteudoColuna3DadosEscala = document.createElement('strong')
+            coluna3DadosEscala.style.textAlign = "right"
+
+            coluna3DadosEscala.appendChild(conteudoColuna3DadosEscala)
+
+            let coluna4DadosEscala = document.createElement('div')
+            coluna4DadosEscala.setAttribute('class', 'col-2')
+            
+
+
+            let coluna5DadosEscala = document.createElement('div')
+            coluna5DadosEscala.setAttribute('class', 'col-1')
+
+            let coluna6DadosEscala = document.createElement('div')
+            coluna6DadosEscala.setAttribute('class', 'col-2')
+
+            let funcaoInativarEscala = `inativarEscala('${escala['id']}')`
+
+            let iconeInativarEscala = document.createElement('i')
+            iconeInativarEscala.setAttribute('class', 'far fa-trash-alt')
+            iconeInativarEscala.style.cursor = 'pointer'
+            iconeInativarEscala.style.position = 'absolute'
+            iconeInativarEscala.style.right = '30px'
+            iconeInativarEscala.style.color = 'red'
+            iconeInativarEscala.setAttribute('onclick', funcaoInativarEscala)
+
+            
+            coluna5DadosEscala.appendChild(iconeInativarEscala)
+
+
+            linhaDadosEscala.appendChild(coluna1DadosEscala)
+            linhaDadosEscala.appendChild(coluna2DadosEscala)
+            linhaDadosEscala.appendChild(coluna6DadosEscala)
+            linhaDadosEscala.appendChild(coluna3DadosEscala)
+            linhaDadosEscala.appendChild(coluna4DadosEscala)
+            linhaDadosEscala.appendChild(coluna5DadosEscala)
+
+            let tabelaEquipesEscala = criarTabelaEquipesEscala(escala)
+
+            linhaEquipesEscala.appendChild(tabelaEquipesEscala)
+
+            colunaConteudoEscala.appendChild(linhaDadosEscala)
+            colunaConteudoEscala.appendChild(linhaEquipesEscala)
+
+
+            LinhaEscala.appendChild(colunaConteudoEscala)
+
+            return LinhaEscala
+
+        }
+
+        function criarTabelaEquipesEscala(equipes_escala, idEscala) {
+
+            let tabela = document.createElement('table')
+            tabela.setAttribute('class', 'table table-sm table-striped')
+
+            let cabecalhoTabela = document.createElement('thead')
+            cabecalhoTabela.setAttribute('class', 'thead-light')
+
+            let linhaCabecalhoSubtituloTabela = document.createElement('tr')
+            let tituloCabecalho = document.createElement('strong')
+            tituloCabecalho.appendChild(document.createTextNode('Equipes da Escala'))
+
+            let tdLinhaCabecalhoTituloTabela = document.createElement('td')
+
+            tdLinhaCabecalhoTituloTabela.setAttribute('colspan', '4')
+            tdLinhaCabecalhoTituloTabela.style.textAlign = "center"
+            tdLinhaCabecalhoTituloTabela.style.backgroundColor = "rgba(0, 0, 0, 0.15)"
+            tdLinhaCabecalhoTituloTabela.appendChild(tituloCabecalho)
+            linhaCabecalhoSubtituloTabela.appendChild(tdLinhaCabecalhoTituloTabela)
+
+            let linhaCabecalhoTabela = document.createElement('tr')
+            let c1CabecalhoTabela = document.createElement('th')
+            c1CabecalhoTabela.style.width = "4%"
+
+            let iconeAdicionarItem = document.createElement('i')
+            iconeAdicionarItem.setAttribute('class', 'fa-solid fa-plus')
+
+            iconeAdicionarItem.setAttribute("data-toggle", "tooltip")
+            iconeAdicionarItem.setAttribute("data-placement", "top")
+            iconeAdicionarItem.setAttribute("title", `Adicionar equipe à Escala`)
+            iconeAdicionarItem.setAttribute('onclick', `adicionarEquipeEscala('${idEscala}')`)
+
+            iconeAdicionarItem.style.cursor = 'pointer'
+
+            c1CabecalhoTabela.appendChild(iconeAdicionarItem)
+            c1CabecalhoTabela.appendChild(document.createTextNode(" "))
+
+            let c2CabecalhoTabela = document.createElement('th')
+            c2CabecalhoTabela.style.width = "5rem"
+            c2CabecalhoTabela.appendChild(document.createTextNode(""))
+            let c3CabecalhoTabela = document.createElement('th')
+            c3CabecalhoTabela.appendChild(document.createTextNode("Horario"))
+            c3CabecalhoTabela.style.width = "25rem"
+
+            let c4CabecalhoTabela = document.createElement('th')
+            c4CabecalhoTabela.appendChild(document.createTextNode("Nome da Equipe"))
+
+            linhaCabecalhoTabela.appendChild(c1CabecalhoTabela)
+            linhaCabecalhoTabela.appendChild(c2CabecalhoTabela)
+            linhaCabecalhoTabela.appendChild(c3CabecalhoTabela)
+            linhaCabecalhoTabela.appendChild(c4CabecalhoTabela)
+            
+
+            cabecalhoTabela.appendChild(linhaCabecalhoSubtituloTabela)
+            cabecalhoTabela.appendChild(linhaCabecalhoTabela)
+
+            let corpoTabela = document.createElement('tbody')
+            corpoTabela.setAttribute('id', `EquipesTabelaEscala-${idEscala}`)
+
+            //for(let equipe of equipes_escala){
+
+                //let linha_itemLote = criarLinhaItemLote(equipe, idEscala)
+                //corpoTabela.appendChild(linha_itemLote)
+
+            //}
+
+            tabela.appendChild(cabecalhoTabela)
+
+            tabela.appendChild(corpoTabela)
+
+            return tabela
+        }
+        
+        function adicionarEquipeEscala(idEscala){
+            const idModal = `janela-adicionar-equipe-escala-${idEscala}`;
+
+            if(document.getElementById(idModal)){
+                let modal = new bootstrap.Modal(document.getElementById(idModal))
+                modal.show()
+            }else{
+                const tituloModal = "Adicionar Equipe à Escala"
+
+                const conteudoModal = criarConteudoModalAdicionarEquipeEscala(idEscala)
+
+                let janela_modal = criarModal(idModal, tituloModal, conteudoModal)
+
+                document.body.appendChild(janela_modal)
+                modal = new bootstrap.Modal(janela_modal)
+                modal.show()
+
+            }
+            
+        }
+        
+        function criarConteudoModalAdicionarEquipeEscala(idEscala){
+            const containerJanela = document.createElement('div');
+            containerJanela.setAttribute('class', 'container-fluid');
+
+            const formulario = criarFormularioBase("AdicionarEquipeEscala")
+
+            const input1 = document.createElement('input');
+            input1.setAttribute('type', 'hidden');
+            input1.setAttribute('name', 'id_escala');
+            input1.setAttribute('value', idEscala);
+            
+            const idNomeEquipe = "idNomeEquipe"
+            
+            const labelNomeEquipe = document.createElement("label")
+            labelNomeEquipe.className = "form-label"
+            labelNomeEquipe.setAttribute("for", idNomeEquipe)
+            labelNomeEquipe.appendChild(document.createTextNode(`Informe o Nome da Equipe`))
+            
+            
+             const inputNomeEquipe = document.createElement('input');
+            inputNomeEquipe.setAttribute('name', 'nomeEscala');
+            inputNomeEquipe.className = "form-control"
+            inputNomeEquipe.type = "text"
+            inputNomeEquipe.style.marginBottom = "1rem"
+            inputNomeEquipe.required = true
+            
+            const adicionar = document.createElement("button")
+            adicionar.appendChild(document.createTextNode("Adicionar"))
+            adicionar.className = "btn btn-primary"
+            adicionar.type = "submit"
+            adicionar.style.marginBottom = "5px"
+            
+            formulario.append(input1, labelNomeEquipe, inputNomeEquipe, adicionar)
+            
+            containerJanela.appendChild(formulario)
+
+            return containerJanela
+        }
+
+
+
+        const colNavSet = document.getElementById('coluna-nav-setores')
+
+        colNavSet.appendChild(criarNavUnidadeSetores(unidades))
+        
+        tabelaEscalasSetor(escalas)
+
+    </script>
+
+{% endblock %}

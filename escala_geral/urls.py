@@ -6,5 +6,8 @@ app_name = 'Escala'
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
+    path('configuracoes/', views.Configuracoes.as_view(),name="Configurações"),
+    path('configuracoes/horarios/', views.ConfigurarHorarios.as_view(),name="Configurar Horários"),
+
 ]
 

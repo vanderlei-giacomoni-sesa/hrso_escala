@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from localflavor.br.models import *
-from pessoas.models import Unidade
+from pessoas.models import Unidade, Profissional
 from comuns.models import Fornecedor
 
 # Create your models here.
@@ -14,6 +14,9 @@ class ModalidadeLicitacao(models.Model):
     nome_modalidade = models.CharField(max_length=30, verbose_name='nome da modalidade')
     modalidade_faturavel = models.BooleanField(default=True)
 
+    def __str__(self):
+        return self.nome_modalidade
+
 
 class Licitacao(models.Model):
     modalidade_licitacao = models.ForeignKey(ModalidadeLicitacao, on_delete=models.PROTECT)
@@ -22,20 +25,22 @@ class Licitacao(models.Model):
     slug = models.SlugField(unique=True, max_length=200)
     cadastro_finalizado = models.BooleanField(default=False)
     licitacao_ativa = models.BooleanField(default=True)
+    unidades = models.ManyToManyField(Unidade)
+
 
     class Meta:
         verbose_name = "licitação"
         verbose_name_plural = "licitações"
 
     def __str__(self):
-        nome_str = '{0} {1}'.format(self.modalidade_licitacao, self.numero_licitacao)
+        nome_str = '{0} {1}'.format(self.modalidade_licitacao.nome_modalidade, self.numero_licitacao)
 
         return nome_str
 
     def save(self, *args, **kwargs):
         super(Licitacao, self).save(*args, **kwargs)
         if not self.slug:
-            nome_slug = '{0}{1}'.format(self.modalidade_licitacao, self.numero_licitacao)
+            nome_slug = '{0}{1}'.format(self.modalidade_licitacao.nome_modalidade, self.numero_licitacao)
             self.slug = slugify(nome_slug)
             self.save()
 
@@ -62,10 +67,19 @@ class LoteLicitacao(models.Model):
             self.save()
 
 
+class UnidadesMedida(models.TextChoices):
+    POSTO = "PT", _('posto de trabalho')
+    HORA = "H", _("hora")
+    PLANTAO = "P", _('plantao')
+    UNIDADE = "UNID", _("unidade")
+
+
 class ItemLoteLicitacao(models.Model):
     numero_item = models.IntegerField()
     var_num_item = models.IntegerField(default=0)
     descricao_item = models.CharField(max_length=200)
+    unidade_medida = models.CharField(choices=UnidadesMedida.choices, max_length=15)
+    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE)
     informacoes_complementares = models.TextField(blank=True, null=True)
     lote_licitacao_refecencia = models.ForeignKey(LoteLicitacao, on_delete=models.CASCADE)
     quantidade_licitada = models.FloatField()
@@ -93,16 +107,12 @@ class ItemLoteLicitacao(models.Model):
             self.save()
 
 
-class ItemLicitacaoUnidade(models.Model):
-    item = models.ForeignKey(ItemLoteLicitacao, on_delete=models.CASCADE)
-    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE)
-
-
 class Contrato(models.Model):
     class StatusChoices(models.TextChoices):
         CADASTRO = 'cadastro'
         VIGENTE = 'vigente'
         VIGENTE_ADITIVADO = 'vigente com aditivo'
+        ADITIVO_QUANTIDADE = 'aditivado em quantidade'
         ENCERRADO = 'encerrdo'
         RESCINDIDO = 'rescindido'
 
@@ -110,7 +120,7 @@ class Contrato(models.Model):
 
     STATUS_ENCERADOS = [StatusChoices.ENCERRADO, StatusChoices.RESCINDIDO]
 
-    status = models.CharField(choices=StatusChoices.choices, max_length=20, default=StatusChoices.CADASTRO)
+    status = models.CharField(choices=StatusChoices.choices, max_length=30, default=StatusChoices.CADASTRO)
     unidade_contrato = models.ForeignKey(Unidade, on_delete=models.PROTECT)
     numero_contrato = models.CharField(max_length=200)
     licitacao_referencia = models.ForeignKey(Licitacao, on_delete=models.CASCADE)
@@ -139,7 +149,7 @@ class Contrato(models.Model):
 
 class LoteContrato(models.Model):
     contrato_referencia = models.ForeignKey(Contrato, on_delete=models.CASCADE)
-    lote_referencia = models.ForeignKey(LoteLicitacao, on_delete=models.CASCADE)
+    lote_referencia = models.ForeignKey(LoteLicitacao, on_delete=models.PROTECT)
     slug = models.SlugField(unique=True, max_length=200)
 
     class Meta:
@@ -155,16 +165,9 @@ class LoteContrato(models.Model):
         super(LoteContrato, self).save(*args, **kwargs)
 
 
-class UnidadesMedida(models.TextChoices):
-    UNIDADE = "UNID", _("unidade")
-    HORA = "H", _("hora")
-    DIAS = "D", _('dia')
-
-
 class ItemLoteContrato(models.Model):
-    unidade_medida = models.CharField(choices=UnidadesMedida.choices, max_length=15)
     lote_contrato_referencia = models.ForeignKey(LoteContrato, on_delete=models.CASCADE)
-    item_licitacao_referencia = models.ForeignKey(ItemLoteLicitacao, on_delete=models.CASCADE)
+    item_licitacao_referencia = models.ForeignKey(ItemLoteLicitacao, on_delete=models.PROTECT)
     valor_item = models.FloatField()
     quantidade_contratada = models.FloatField()
     ativo = models.BooleanField(default=True)
@@ -257,6 +260,73 @@ class ItemLoteAditivo(models.Model):
         return "{1}-{2}-{0}".format(self.item_contrato_referencia.item_licitacao_referencia.numero_item,
                                 self.lote_aditivo_referencia.aditivo_referencia.contrato_referencia.numero_contrato,
                                 self.lote_aditivo_referencia.aditivo_referencia.numero_aditivo)
+
+
+class ProfissionalFornecedor(models.Model):
+    vinculo_profissional = models.ForeignKey(Profissional, on_delete=models.PROTECT)
+    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.PROTECT)
+    vinculo_ativo = models.BooleanField(default=True)
+
+
+class ProfissionalItemContrato(models.Model):
+    item_contrato_referencia = models.ForeignKey(ItemLoteContrato, on_delete=models.PROTECT)
+    vinculo_profissional = models.ForeignKey(Profissional, on_delete=models.PROTECT)
+    vinculo_ativo = models.BooleanField(default=True)
+
+
+class AditivoQuantidade(models.Model):
+
+    ADITIVO = 'Aditivo'
+    APOSTILAMENTO = 'Apostilamento'
+    TIPO_ADITIVO_CHOICES = [
+        (ADITIVO, ADITIVO),
+        (APOSTILAMENTO, APOSTILAMENTO)
+    ]
+
+    numero_aditivo = models.IntegerField()
+    contrato_referencia = models.ForeignKey(Contrato, on_delete=models.CASCADE)
+    aditivo_referencia = models.ForeignKey(AditivoContrato, on_delete=models.CASCADE, null=True, blank=True)
+    slug = models.SlugField(unique=True, max_length=200)
+
+    tipo_aditivo = models.CharField(choices=TIPO_ADITIVO_CHOICES, max_length=50, default=ADITIVO)
+
+    aditivo_editavel = models.BooleanField(default=True)
+
+    sequencia_aditivo = models.IntegerField()
+
+    class Meta:
+        ordering = ['numero_aditivo']
+        verbose_name = "aditivo de Quantidade"
+        verbose_name_plural = "aditivos de quantidade"
+
+    def __str__(self):
+        nome_aditivo = '{0}º {1} {2}'.format(self.numero_aditivo, self.tipo_aditivo, self.contrato_referencia.numero_contrato)
+        return nome_aditivo
+    def save(self, *args, **kwargs):
+        if not self.sequencia_aditivo:
+            if not AditivoQuantidade.objects.filter(contrato_referencia=self.contrato_referencia).exists():
+                self.sequencia_aditivo = 1
+            else:
+                #self.sequencia_aditivo = AditivoContrato.objects.filter(contrato_referencia=self.contrato_referencia).count() + 1
+                self.sequencia_aditivo = AditivoQuantidade.objects.filter(
+                    contrato_referencia=self.contrato_referencia
+                ).aggregate(Max('sequencia_aditivo'))['sequencia_aditivo__max'] + 1
+        super(AditivoQuantidade, self).save(*args, **kwargs)
+
+        if not self.slug:
+            self.slug = slugify('{0} {1} {2} {3}'.format(self.id, self.numero_aditivo,
+                                                         self.contrato_referencia.id, self.contrato_referencia.numero_contrato))
+            self.save()
+
+
+class QuantidadeAditivada(models.Model):
+    aditivo = models.ForeignKey(AditivoQuantidade, on_delete=models.CASCADE)
+    item_contrato = models.ForeignKey(ItemLoteContrato, on_delete=models.CASCADE, blank=True, null=True)
+    item_aditivo = models.ForeignKey(ItemLoteAditivo, on_delete=models.CASCADE, blank=True, null=True)
+    quantidade_original = models.FloatField()
+    quantidade_aditivada = models.FloatField()
+
+
 
 
 

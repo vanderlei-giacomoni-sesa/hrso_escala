@@ -1,0 +1,86 @@
+{% extends 'contratos/base.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+    {% bootstrap_messages %}
+
+    <div class="row">
+        <div class="col-3">
+            <div class="painel-dados-contrato">
+                <br>
+                <h5><strong>Contrato: </strong>{{ contrato.numero_contrato }}</h5>
+                <br>
+                <div class="painel-contrato">
+                    <h6><strong>Objeto: </strong>{{ contrato.licitacao_referencia.objeto }}</h6>
+                    <h6><strong>Licitação: </strong><a href="{% url 'Contratos:Licitacao Unidade' slug_unidade=unidade.slug slug_licitacao=contrato.licitacao_referencia.slug %}">{{ contrato.licitacao_referencia.modalidade_licitacao }} {{ contrato.licitacao_referencia.numero_licitacao }}</a></h6>
+                    <h6><strong>Fornecedor: </strong><a href="{% url 'Contratos:Fornecedor' slug_fornecedor=contrato.fornecedor_contratado.slug %}">{{ contrato.fornecedor_contratado.razao_social_fornecedor }}</a></h6>
+                    <h6><strong>Status do Contrato: </strong>{{ contrato.status }}</h6>
+                    {% if contrato.status == contrato.RESCINDIDO %}
+                        <p><strong>Motivo da Rescisão: </strong>{{ contrato.motivo_rescisao }}</p>
+                    {% endif %}
+                    <h6><strong>Inicio da Vigência: </strong> {{ contrato.inicio_vigencia }}</h6>
+                    <h6><strong>Fim da Vigência: </strong> {{ fim_vigencia }}</h6>
+
+                </div>
+                <br>
+                <div class="painel-contrato">
+                    <h6><strong>Status do Contrato:</strong> {{ contrato.status }}</h6>
+                    {% if contrato.status == contrato.RESCINDIDO %}
+                        <h6><strong>Motivo da Rescisão:</strong> {{ contrato.motivo_rescisao }}</h6>
+                    {% endif %}
+                    <h6><strong>Visualizar: </strong></h6>
+                    <ul class="nav nav-pills flex-column" id="nav-visualizacoes">
+                    </ul>
+                    <br>
+                </div>
+                <br>
+                <div class="painel-contrato">
+                    <h6 style="padding-bottom: 0.5rem">Ações disponíveis:</h6>
+                    {% for acao_contrato in acoes_contrato %}
+                        <div class="btn btn-light" {% if acao_contrato.data_attr %}{{ acao_contrato.data_attr }}
+                        {% endif %} onclick="{{ acao_contrato.js_function }}">{{ acao_contrato.label }}</div>
+                    {% endfor %}
+                    <div class="row" style="padding-bottom: 1rem"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-9" id="coluna-lotes-contratados" style="overflow-y: auto">
+            <div class="container-fluid painel-contrato" id="container-lotes-contratados">
+
+            </div>
+        </div>
+
+    </div>
+
+
+    <script>
+        window.addEventListener('resize', function(event) {
+            ajustarAlturaJanelaLotes('coluna-lotes-contratados', 124)
+        }, true);
+        
+        visualizacoes = {{ visualizacoes_contrato|safe }};
+
+        lotes_contrataveis = {{ lotes_contrataveis|safe }};
+        console.log("LCV: ",lotes_contrataveis)
+        lotes_contratados = {{ lotes_contratados|safe }};
+        console.log("LCC: ", lotes_contratados)
+        
+        fimVigencia = "{{ contrato.fim_vigencia|date:'c' }}";
+
+        id_contrato = {{ contrato.id }};
+        statusContrato = "{{ contrato.status }}";
+        
+        tiposAditivo = {{ tipos_aditivo|safe }};
+
+        console.log(visualizacoes)
+        
+        criarItensVisualizar()
+        
+        ajustarAlturaJanelaLotes('coluna-lotes-contratados', 124)
+
+    </script>
+
+{% endblock %}

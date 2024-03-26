@@ -6,11 +6,14 @@ from validate_docbr import CPF
 from hrso_escala.settings import BASE_DIR
 from pessoas.ferramentas.meta4 import ler_arquivos
 
-from comuns.models import Funcao
+from comuns.models import Funcao, PeriodoReferencia
 from escala_geral.models import DadosConselhoProfissional
-from pessoas.models import Profissional, PessoaFisica, VinculoFuncional
+from pessoas.models import Profissional, PessoaFisica, VinculoFuncional, DadosCadastraisMeta4, \
+    LancamentoContrachequeMeta4
 from comuns.populate.pessoas import FUNCOES_CBO
 from comuns.models import Ocupacao
+
+from django.db.models import Max, Min, Sum
 
 
 def funcoes_meta_4():
@@ -103,6 +106,67 @@ def relatorio_nascimento_colaboradores():
         linha += 1
 
     wb.close()
+
+
+
+def lista_remuneracao_colaboradores():
+    codigos_buscar = [1005,
+                      1056,
+                      1059,
+                      1079,
+                      1229,
+                      1469,
+                      1476,
+                      1533,
+                      1553,
+                      1788,
+                      1923,
+                      2187,
+                      2214,
+                      2308,
+                      2394,
+                      2399,
+                      2487,
+                      2533,
+                      3533,
+                      3540,
+                      5713,
+                      5736,
+                      5739,
+                      5773,
+                      5796,
+                      6023,
+                      6026,
+                      6033,
+                      6040,
+                      6053,
+                      6253,
+                      ]
+    periodo = PeriodoReferencia.objects.get(ano_referencia=2024, mes_referencia=2)
+    descricoes = LancamentoContrachequeMeta4.objects.filter(periodo_referencia=periodo).values('descricao_lancamento', 'id_lancamento').distinct()
+
+    x = LancamentoContrachequeMeta4.objects.filter(periodo_referencia=periodo).values(
+        'valor_desconto', 'valor_vantagem').aggregate(menor_lancamento=Min('valor_vantagem'),
+                                                      menor_desconto=Min('valor_vantagem'))
+
+    colaboradores_periodo = VinculoFuncional.objects.filter(
+        dadoscadastraismeta4__periodo_referencia=periodo
+    ).values('id', "id_ato_formal", 'profissional__pessoa_fisica__nome', 'dadoscadastraismeta4__funcao__nome', 'dadoscadastraismeta4__cargo'
+             ).order_by('profissional__pessoa_fisica__nome')
+
+    for c in colaboradores_periodo:
+        lc = LancamentoContrachequeMeta4.objects.filter(
+            vinculo_funcional__id=c['id'], periodo_referencia=periodo, id_lancamento__in=codigos_buscar
+        ).values('valor_vantagem', 'valor_desconto').aggregate(
+            vantagens_totais=Sum('valor_vantagem'), descontos_totais=Sum('valor_desconto')
+        )
+        total = lc['vantagens_totais'] - lc['descontos_totais']
+        st = "{:.2f}".format(total)
+        print(f"{c['profissional__pessoa_fisica__nome']};{c['dadoscadastraismeta4__funcao__nome']};{c['dadoscadastraismeta4__cargo']};{st}")
+
+
+
+
 
 
 

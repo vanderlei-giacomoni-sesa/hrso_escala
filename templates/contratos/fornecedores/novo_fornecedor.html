@@ -1,0 +1,40 @@
+{% extends 'contratos/base.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block conteudo_pagina %}
+    
+    {% include 'nav/nav_path.html' %}
+    {% bootstrap_messages %}
+    
+    
+
+    <h1>Novo Fornecedor</h1>
+
+    <div class="container">
+        <form action="" method="POST">
+            {% csrf_token %}
+            {% bootstrap_form form %}
+            <input type="submit" class="btn btn-dark" value="Adicionar">
+        </form>
+
+    </div>
+    
+    <br>
+    <br>
+    
+    
+    <script>
+    
+    document.addEventListener('DOMContentLoaded', function() {
+            VMasker(document.getElementById('id_cnpj_fornecedor')).maskPattern('99.999.999/9999-99');
+            VMasker(document.getElementById('id_cep_fornecedor')).maskPattern('99999-999');
+        });
+    </script>
+    
+    
+    
+    
+    
+    
+{% endblock %}

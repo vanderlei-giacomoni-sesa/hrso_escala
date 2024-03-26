@@ -21,8 +21,8 @@
                     <input hidden type="text" name="tipo-acao" value="novo-setor-setor">
                     <input hidden type="text" name='id' value="{{ setor.id }}">
 
-                    <a class="btn btn-success" href="{% url 'Pessoas:Colaboradores Setor' slug_unidade=unidade.slug slug_setor=setor.slug %}">Colaboradores Setor</a>
-
+                    <a class="btn btn-success" href="{% url 'Pessoas:Colaboradores Setor' slug_unidade=unidade.slug slug_setor=setor.slug %}">Colaboradores</a>
+                        <a class="btn btn-success" href="{% url 'Pessoas:Gerenciar Escalas Setor' slug_unidade=unidade.slug slug_setor=setor.slug %}">Escalas</a>
                 {% else %}
                     <input hidden type="text" name="tipo-acao" value="novo-setor-unidade">
                     <input hidden type="text" name='id' value="{{ unidade.id }}">
@@ -33,6 +33,7 @@
                     <input type="submit" value="Adicionar Setor" class="btn btn-primary">
                 </div>
             </form></div>
+        
             <div class="container-fluid">
                 <h3>{{ form.titulo }}</h3>
                 <form action="" method="POST" id="formulario-atualizar-unidade">

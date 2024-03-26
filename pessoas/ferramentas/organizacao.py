@@ -73,10 +73,17 @@ def buscar_pessoas_fisicas_com_vinculo_setor(id_setor):
 
 
 def nomear_vinculo_funcional(vinculo_funcional):
-    print(type(vinculo_funcional), vinculo_funcional)
-    return {1: "SESA", 2:"FUNEAS",
+    if isinstance(vinculo_funcional, VinculoFuncional):
+        return {1: "SESA", 2:"FUNEAS",
             3: vinculo_funcional.cnpj_vinculo.razao_social_fornecedor,
             4: vinculo_funcional.cnpj_vinculo.razao_social_fornecedor}[vinculo_funcional.tipo_vinculo]
+    else:
+        v = VinculoFuncional.objects.get(id=vinculo_funcional)
+        return {1: "SESA", 2: "FUNEAS",
+                3: v.cnpj_vinculo.razao_social_fornecedor,
+                4: v.cnpj_vinculo.razao_social_fornecedor}[v.tipo_vinculo]
+
+
 
 
 

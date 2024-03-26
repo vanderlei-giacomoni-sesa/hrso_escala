@@ -14,6 +14,11 @@ function getCookie(name) {
     return cookieValue;
 }
 
+function ajustarAlturaJanelaLotes(idContainer, alturaDescontar){
+    alturaContainerLotes = window.innerHeight - alturaDescontar
+    containerLotes = document.getElementById(idContainer)
+    containerLotes.style.height = `${alturaContainerLotes}px`
+}
 
 function criarFormdata(tipoAcao){
     console.log(csrftoken);
@@ -33,6 +38,7 @@ function criarFormularioBase(tipoAcao){
 
     const inputTipoAcao = document.createElement('input')
     inputTipoAcao.hidden = true
+    inputTipoAcao.id=`id-${tipoAcao}`
     inputTipoAcao.name = "tipo-acao"
     inputTipoAcao.value = tipoAcao
 
@@ -57,13 +63,16 @@ function enviarFormData(formData, callbackFunction) {
         .catch(error => console.error(error));
 }
 
-function criarModal(idModal, tituloModal, conteudoModal){
+function criarModal(idModal, tituloModal, conteudoModal, tamanhoModal){
     let modal = document.createElement('div')
     modal.className = "modal"
     modal.id= idModal
 
     let modalDialog = document.createElement('div')
-    modalDialog.className = "modal-dialog"
+    if(tamanhoModal){
+        modalDialog.className = `modal-dialog ${tamanhoModal}`
+    }else{modalDialog.className = "modal-dialog"}
+
 
     let modalContent = document.createElement("div")
     modalContent.className = "modal-content"
@@ -271,33 +280,60 @@ function criarInputSelect(id, opcoes, optionKey, funcaoBuscar, option) {
 
     divCol.appendChild(h5);
 
+    let linha1 = document.createElement('div')
+    linha1.className = "row";
+
+    let colunaLinha1 = document.createElement('div');
+    colunaLinha1.className = 'col'
+
+
+
+    let linha2 = document.createElement('div')
+    linha2.className = "row";
+
+    let colunaLinha2 = document.createElement('div');
+    colunaLinha2.className = 'col'
+
+    let linha3 = document.createElement('div')
+    linha3.className = "row";
+
+    let colunaLinha3 = document.createElement('div');
+    colunaLinha3.className = 'col'
+
+
     var inputSelect = document.createElement('input');
     inputSelect.type = "text"
     inputSelect.className = "form-control"
     inputSelect.id = `input-select-${option}-${id}`
-    inputSelect.placeholder = "localizar"
+    inputSelect.placeholder = "localizar ou selecionar"
+    inputSelect.setAttribute('list', `datalist-${option}-${id}`);
+    inputSelect.dataset.optionid = ''; // Adiciona dataset.optionid ao input
+    inputSelect.style.width = "100%"
 
-    var selectFuncoes = document.createElement('select')
-    selectFuncoes.className = "form-select"
-    selectFuncoes.id = `select-${option}-${id}`
-    selectFuncoes.required = true
-    selectFuncoes.setAttribute('onchange', "validarSelect(this)")
-
-    let opcao_disabled = document.createElement('option');
-    opcao_disabled.disabled = true
-    opcao_disabled.text = "escolha uma opção"
-
-    let opcao_blank = document.createElement('option');
-
-    selectFuncoes.appendChild(opcao_blank);
+    var datalist = document.createElement('datalist');
+    datalist.id = `datalist-${option}-${id}`;
+    datalist.style.width = "100%"
 
     for(let o of opcoes){
-        let opcao = document.createElement('option');
-        opcao.value = o['id'];
-        opcao.text = o[optionKey];
-        selectFuncoes.appendChild(opcao);
+        let optionDatalist = document.createElement('option');
+        optionDatalist.style.width = "100%"
+        optionDatalist.value = o[optionKey];
+        optionDatalist.dataset.optionid =  o['id'];
+        datalist.appendChild(optionDatalist);
     }
 
+    // Adiciona um ouvinte de eventos para o input
+    inputSelect.addEventListener('input', function(event) {
+        let value = event.target.value;
+        let options = datalist.getElementsByTagName('option');
+        for (let option of options) {
+            if (option.value === value) {
+                // Atualiza o dataset.optionid do input com o valor correspondente da opção selecionada
+                inputSelect.dataset.optionid = option.dataset.optionid;
+                break;
+            }
+        }
+    });
 
     let invalidFeedback = document.createElement('div');
     invalidFeedback.className = "invalid-feedback";
@@ -310,35 +346,24 @@ function criarInputSelect(id, opcoes, optionKey, funcaoBuscar, option) {
     let botaoBuscar = document.createElement('input');
     botaoBuscar.setAttribute('class', 'btn btn-success');
     botaoBuscar.setAttribute('value', 'Selecionar');
-    botaoBuscar.setAttribute('onclick', `${funcaoBuscar}(${id}, '${option}')`)
+    botaoBuscar.setAttribute('onclick', `${funcaoBuscar}(${id}, '${option}')`);
 
-    divCol.appendChild(inputSelect)
-    divCol.appendChild(document.createElement('br'))
-    divCol.appendChild(selectFuncoes)
-    divCol.appendChild(document.createElement('br'))
-    divCol.appendChild(validFeedback)
-    divCol.appendChild(invalidFeedback)
-    divCol.appendChild(botaoBuscar)
+    colunaLinha1.appendChild(inputSelect);
+    colunaLinha2.appendChild(datalist); // Adiciona o datalist ao HTML
+    colunaLinha1.appendChild(validFeedback);
+    colunaLinha1.appendChild(invalidFeedback);
+    colunaLinha3.appendChild(document.createElement('br'))
+    colunaLinha3.appendChild(botaoBuscar);
 
+    linha1.appendChild(colunaLinha1)
+    linha2.appendChild(colunaLinha2)
+    linha3.appendChild(colunaLinha3)
+
+    divCol.append(linha1, linha2, linha3)
 
     objetoHTML.appendChild(divCol);
 
-    inputSelect.addEventListener('input', function () {
-        var input = this.value.toLowerCase();
-        var options = selectFuncoes.getElementsByTagName('option');
-
-        for (var i = 0; i < options.length; i++) {
-            var optionText = options[i].innerText.toLowerCase();
-            if (optionText.includes(input)) {
-                options[i].style.display = 'block';
-            } else {
-                options[i].style.display = 'none';
-            }
-        }
-    });
-
     return objetoHTML;
-
 }
 
 window.None = null

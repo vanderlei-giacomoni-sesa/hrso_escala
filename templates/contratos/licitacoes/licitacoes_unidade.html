@@ -1,0 +1,70 @@
+{% extends 'contratos/base.html' %}
+
+{% load django_bootstrap5 %}
+
+{% bootstrap_messages %}
+
+{% block conteudo_pagina %}
+    
+    {% include 'nav/nav_path.html' %}
+    
+    <div class="d-flex justify-content-end"><button class="btn btn-light" style="margin-top: 10px; margin-bottom: 10px" data-bs-toggle="modal" data-bs-target="#novaLicitacao">Nova Licitação</button></div>
+
+    <div class="modal fade" id="novaLicitacao" tabindex="-1" aria-labelledby="tituloNovaLicitacao" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloNovaLicitacao">Nova Licitação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Formulário do Django Bootstrap 5 -->
+                    <form action="" method="POST">
+                        {% csrf_token %}
+                        {% bootstrap_form form %}
+                        <input type="submit" class="btn btn-dark" value="Nova Licitação">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-3">
+            {% include 'contratos/nav/nav_unidades_licitcoes.html' %}
+        </div>
+    
+        <div class="col-9">
+            <div class="container-fluid">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Modalidade</th>
+                        <th>Numero da Licitação</th>
+                        <th>Objeto</th>
+                    </tr>
+                    
+                    </thead>
+                    <tbody>
+                    
+                    {% for l in licitacoes %}
+                        <tr>
+                            <td><a  href="{% url 'Contratos:Licitacao Unidade' slug_unidade=unidade.slug slug_licitacao=l.slug %}">{{ l.modalidade_licitacao }}</a></td>
+                            <td><a>{{ l.numero_licitacao }}</a></td>
+                            <td><a>{{ l.objeto }}</a></td>
+                        </tr>
+                    
+                    {% endfor %}
+                    
+                    </tbody>
+                </table>
+                
+                
+            </div>
+            
+        </div>
+    
+    </div>
+    
+    
+{% endblock %}

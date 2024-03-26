@@ -100,9 +100,9 @@
         function vincularCbo(id, option){
             const formData = criarFormdata('vincularCbo')
             formData.append('idFuncao', id)
-            let selectCbo = document.getElementById(`select-${option}-${id}`)
+            let selectCbo = document.getElementById(`input-select-${option}-${id}`)
             
-            formData.append('idCbo', selectCbo.value)
+            formData.append('idCbo', selectCbo.dataset.optionid)
             validarSelect(selectCbo)
             if(selectCbo.value !== ""){
                 enviarFormData(formData, processarVinculoCbo)

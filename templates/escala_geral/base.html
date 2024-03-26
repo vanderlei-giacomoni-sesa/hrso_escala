@@ -9,13 +9,14 @@
 
 {% block menu_variavel_direito %}
     <li class="nav-item">
-        <a class="nav-link">Menu Escala Direito</a>
+        <a class="nav-link{% if '/configuracoes/' in request.META.PATH_INFO %} active{% endif %}" 
+           href="{% url 'Escala:Configurações' %}">
+            Configurações
+        </a>
     </li>
 {% endblock %}
 
 
 {% block conteudo_pagina %}
-
-    <p>Escala</p>
 
 {% endblock %}

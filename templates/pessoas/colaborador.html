@@ -30,10 +30,12 @@
                                 Funções
                             </a>
                             {% for p in profissoes_colaborador %}
-                                <li class="list-group-item text-center active" style="cursor: pointer; padding-left: 25px" id="li-prof-{{ p.id }}">
+                                <li class="list-group-item active" id="li-prof-{{ p.id }}">
                                 <span style="margin-left: 25px;">{{ p.funcao }}{% if p.nome_conselho %}
                                     - {{ p.nome_conselho }} - {{ p.estado_conselho }}: {{ p.numero_conselho }}
                                 {% endif %}</span>
+                                <span class="fa-solid fa-trash" style="float: right; margin-right: 0; cursor: pointer; color: hotpink"></span>
+                                
                                 </li>
                                 <div class="list-group-submenu" id="sub-li-prof-{{ p.id }}">
                                     <li class="list-group-item sub-item list-group-item-primary" data-parent="#li-prof-{{ p.id }}" style="padding-left: 50px;">
@@ -42,7 +44,10 @@
 
                                     </li>
                                     {% for v in p.vinculos_colaborador %}
-                                        <li class="list-group-item sub-item list-group-item-light" data-parent="#li-prof-{{ p.id }}" style="padding-left: 150px;">{{ v.vinculo }}</li>
+                                        <li class="list-group-item sub-item list-group-item-light" id="linhaVinculo-{{ v.id }}" data-parent="#li-prof-{{ p.id }}">
+                                            <span style="margin-left: 150px;"> - {{ v.vinculo }}</span>
+                                            <span class="fa-solid fa-trash" style="float: right; margin-right: 0; cursor: pointer; color: red" onclick="inativarVinculoFuncional({{ v.id }})"></span>
+                                        </li>
                                     {% endfor %}
                                 </div>
                                 
@@ -87,14 +92,60 @@
         
         estados = {{ estados|safe }};
         
-        console.log(funcoes)
-
         function criarConteudoModalVincularColaborador(idProfissional){
             let containerModal = document.createElement('div')
             containerModal.className = "container-fluid"
-            containerModal.appendChild(criarOptionsTipoVinculo())
+            let formularioVincularColaborador = criarFormularioBase("criarVinculoFuncional")
+            formularioVincularColaborador.id = `formularioVincularColaborador-${idProfissional}`
+            
+            let inputIdProfissional = document.createElement('input')
+            inputIdProfissional.hidden = true
+            inputIdProfissional.name = "idProfissional"
+            inputIdProfissional.id = "idinputIdProfissional"
+            inputIdProfissional.value = idProfissional
+            
+            formularioVincularColaborador.appendChild(inputIdProfissional)
+            
+            
+             var selectUnidade = document.createElement('select')
+            selectUnidade.className = "form-select"
+            selectUnidade.id = `selectUnidadeFornecedor-${idProfissional}`
+            selectUnidade.required = true
+            selectUnidade.name = 'idUnidade'
+            selectUnidade.style.marginBottom = "10px"
+
+            let opcao_disabled = document.createElement('option');
+            opcao_disabled.disabled = true
+            opcao_disabled.text = "escolha uma Unidade"
+            
+            for(let u of unidades){
+                let opcao = document.createElement('option');
+                opcao.value = u['id'];
+                opcao.text = u['sigla_unidade'];
+                selectUnidade.appendChild(opcao);
+            }
+            
+            formularioVincularColaborador.appendChild(selectUnidade)
+            
+            formularioVincularColaborador.appendChild(criarOptionsTipoVinculo())
+            
+            containerModal.appendChild(formularioVincularColaborador)
 
             return containerModal
+        }
+        
+        function inativarVinculoFuncional(id){
+            const formData = criarFormdata('inativarVinculoFuncional')
+            formData.append('idVinculoFuncional', id)
+            if (confirm("Confirmar a exclusão do vinculo?")){enviarFormData(formData, processarInativarVinculoFuncional)}
+        }
+        
+        function processarInativarVinculoFuncional(response){
+            if(response.status === "ok"){
+                const linhaVinculo = document.getElementById(`linhaVinculo-${response.idVinculoFuncional}`)
+                linhaVinculo.remove()
+            }
+            
         }
 
         function adicionarVinculoColaborador(idProfissional){
@@ -125,7 +176,7 @@
             divCol.className = "col d-flex justify-content-end";
 
             let botaoBuscarFuneas = document.createElement('button');
-            botaoBuscarFuneas.type = "button";
+            botaoBuscarFuneas.type = "submit";
             botaoBuscarFuneas.className = "btn btn-primary";
             botaoBuscarFuneas.appendChild(document.createTextNode("Criar Vinculo Funeas"));
 
@@ -134,28 +185,145 @@
             objetoHTML.appendChild(divCol)
 
             return objetoHTML
-
         }
 
-        function linhaVincularContrato(){
+        function linhaVincularContrato() {
             let objetoHTML = document.createElement('div');
             objetoHTML.className = "row";
-            objetoHTML.id = 'idLinhaVincularColaborador'
-
+            objetoHTML.id = 'idLinhaVincularColaborador';
+            
             let divCol = document.createElement('div');
-            divCol.className = "col d-flex justify-content-end";
+            divCol.className = "col";
 
-            let botaoBuscarFuneas = document.createElement('button');
-            botaoBuscarFuneas.type = "button";
-            botaoBuscarFuneas.className = "btn btn-primary";
-            botaoBuscarFuneas.appendChild(document.createTextNode("Buscar Fornecedor"));
+            let linhaCnpj = document.createElement('div');
+            linhaCnpj.className = "row"
+            linhaCnpj.style.marginTop = '10px'
+            
+            let linhaNome = document.createElement('div');
+            linhaNome.className = "row"
+            linhaNome.style.marginTop = '10px'
+            
+            let linhaBuscar = document.createElement('div');
+            linhaBuscar.className = "row"
+            linhaBuscar.style.marginTop = '10px'
+            
+            let linhaListaFornecedores = document.createElement('div');
+            linhaListaFornecedores.className = "row"
+            linhaListaFornecedores.style.marginTop = '10px'
+            linhaListaFornecedores.setAttribute('id', 'idlinhaListaFornecedores')
+            
+            // Linha 1: Input de CPF
+            let divColCnpj = document.createElement('div');
+            divColCnpj.className = "col";
+            let inputCnpj = document.createElement('input');
+            inputCnpj.className = "form-control";
+            inputCnpj.id = "buscarCnpjFornecedorVincularContrato";
+            inputCnpj.type = "text";
+            inputCnpj.placeholder = "Buscar por CNPJ";
+            
+            VMasker(inputCnpj).maskPattern("99.999.999/9999-99");
+            
+            divColCnpj.appendChild(inputCnpj);
+            
+            linhaCnpj.appendChild(divColCnpj)
 
-            divCol.appendChild(botaoBuscarFuneas)
+            // Linha 2: Input de Nome
+            let divColNome = document.createElement('div');
+            divColNome.className = "col";
+            let inputNome = document.createElement('input');
+            inputNome.className = "form-control";
+            inputNome.id = "buscarNomeFornecedorVincularContrato";
+            inputNome.type = "text";
+            inputNome.placeholder = "ou Razão Social";
+            divColNome.appendChild(inputNome);
+            linhaNome.appendChild(divColNome);
 
-            objetoHTML.appendChild(divCol)
+            // Linha 3: Botão "Buscar Fornecedor"
+            let divColBotao = document.createElement('div');
+            divColBotao.className = "col";
+            let botaoBuscarFornecedor = document.createElement('button');
+            botaoBuscarFornecedor.type = "button";
+            botaoBuscarFornecedor.className = "btn btn-primary";
+            botaoBuscarFornecedor.appendChild(document.createTextNode("Buscar Fornecedor"));
+            botaoBuscarFornecedor.setAttribute('onclick', 'buscarFornecedorVincularContrato(this)')
+            divColBotao.appendChild(botaoBuscarFornecedor);
+            linhaBuscar.appendChild(divColBotao)
 
+            // Adicionando os elementos criados ao objetoHTML
+            objetoHTML.append(linhaCnpj, linhaNome, linhaBuscar, linhaListaFornecedores);
+            
+            return objetoHTML;
+        }
+        
+        
+        function buscarFornecedorVincularContrato(botaoBuscar){
+            const divBuscar = botaoBuscar.parentNode.parentNode.parentNode.parentNode
+            console.log(divBuscar)
+            const inputNome = divBuscar.querySelector('#buscarNomeFornecedorVincularContrato')
+            const inpuCnpj = divBuscar.querySelector('#buscarCnpjFornecedorVincularContrato')
+            const idProfissional = divBuscar.querySelector('#idinputIdProfissional')
+
+            const form = criarFormdata("buscarFornecedorContratadoVincular")
+            form.append('razaoSocial', inputNome.value)
+            form.append('cnpj', inpuCnpj.value)
+            form.append('idProfissional', idProfissional.value)
+            enviarFormData(form, processarBuscaFornecedorVincular)
+            
+            console.log(inputNome.value, inpuCnpj.value)
+        }
+        
+        function processarBuscaFornecedorVincular(response){
+            const form = document.getElementById(`formularioVincularColaborador-${response.idProfissional}`)
+
+            if(response.status === "ok"){
+                const linhaFornecedores = form.querySelector("#idlinhaListaFornecedores")
+                while (linhaFornecedores.firstChild) {linhaFornecedores.removeChild(linhaFornecedores.firstChild)}
+                linhaFornecedores.appendChild(criarSelectFornecedorVincular(response.idProfissional, response.fornecedores))
+                
+            }else{alert("Verifique as informações digitadas e tente novamente (o campo Razão social deve ter ao menos 3 caracteres)")}
+
+            console.log(response)
+
+        }
+        
+        function criarSelectFornecedorVincular(idProfissional, fornecedores){
+            
+             let objetoHTML = document.createElement('div');
+            objetoHTML.className = "col";
+            
+            var selectFornecedor = document.createElement('select')
+            selectFornecedor.className = "form-select"
+            selectFornecedor.id = `selectFornecedor-${idProfissional}`
+            selectFornecedor.required = true
+            selectFornecedor.name = 'idFornecedor'
+
+            let opcao_disabled = document.createElement('option');
+            opcao_disabled.disabled = true
+            opcao_disabled.text = "escolha um Fornecedor"
+
+            let opcao_blank = document.createElement('option');
+
+            selectFornecedor.appendChild(opcao_blank);
+
+            for(let f of fornecedores){
+                let opcao = document.createElement('option');
+                opcao.value = f['id'];
+                opcao.text = f['razao_social_fornecedor'];
+                selectFornecedor.appendChild(opcao);
+            }
+            
+            const botaoSelecionar = document.createElement('button')
+            botaoSelecionar.type = "submit"
+            botaoSelecionar.className = "btn btn-primary"
+            botaoSelecionar.textContent = "Selecionar"
+            
+            botaoSelecionar.style.marginTop = '10px'
+            botaoSelecionar.style.marginRight = '10px'
+            
+            objetoHTML.append(selectFornecedor, botaoSelecionar)
+            
             return objetoHTML
-
+            
         }
 
         function linhaVincularAcademico(){
@@ -179,7 +347,7 @@
 
         }
 
-        function criarRadio(id, value, label, name) {
+        function criarRadioTipoVinculo(id, value, label, name) {
             let divRadio = document.createElement('div');
             divRadio.className = "form-check form-check-inline";
 
@@ -214,60 +382,16 @@
 
             divCol.appendChild(h5);
 
-            divCol.appendChild(criarRadio("selecionarVinculoFuneas", "funeas", "Funeas", 'selecionarTipoVinculo'));
-            divCol.appendChild(criarRadio("selecionarBuscaContrato", "contrato", "Contrato", 'selecionarTipoVinculo'));
-            divCol.appendChild(criarRadio("selecionarBuscaAcademico", "academico", "Acadêmino", "selecionarTipoVinculo"));
+            divCol.appendChild(criarRadioTipoVinculo("selecionarVinculoFuneas", "FUNEAS", "Funeas", 'tipoVinculo'));
+            divCol.appendChild(criarRadioTipoVinculo("selecionarBuscaContrato", "CONTRATO", "Contrato", 'tipoVinculo'));
+            divCol.appendChild(criarRadioTipoVinculo("selecionarBuscaAcademico", "ACADEMICO", "Acadêmino", "tipoVinculo"));
 
             objetoHTML.appendChild(divCol);
 
             return objetoHTML;
 
         }
-
-        function criarOptionsUnidade() {
-            let objetoHTML = document.createElement('div');
-            objetoHTML.className = "row";
-
-            let divCol = document.createElement('div');
-            divCol.className = "col";
-
-            let h5 = document.createElement('h5');
-            h5.appendChild(document.createTextNode("Selecione uma Unidade: "));
-
-            divCol.appendChild(h5);
-
-            divCol.appendChild(criarRadio("selecionarVinculoFuneas", "funeas", "Funeas", 'selecionarTipoVinculo'));
-            divCol.appendChild(criarRadio("selecionarBuscaContrato", "contrato", "Contrato", 'selecionarTipoVinculo'));
-            divCol.appendChild(criarRadio("selecionarBuscaAcademico", "academico", "Acadêmino", "selecionarTipoVinculo"));
-
-            objetoHTML.appendChild(divCol);
-
-            return objetoHTML;
-
-        }
-
-        function criarOptionsFuncaoColaborador() {
-            let objetoHTML = document.createElement('div');
-            objetoHTML.className = "row";
-
-            let divCol = document.createElement('div');
-            divCol.className = "col";
-
-            let h5 = document.createElement('h5');
-            h5.appendChild(document.createTextNode("Selecione uma Função para Vincular: "));
-
-            divCol.appendChild(h5);
-
-            divCol.appendChild(criarRadio("selecionarVinculoFuneas", "funeas", "Funeas", 'selecionarTipoVinculo'));
-            divCol.appendChild(criarRadio("selecionarBuscaContrato", "contrato", "Contrato", 'selecionarTipoVinculo'));
-            divCol.appendChild(criarRadio("selecionarBuscaAcademico", "academico", "Acadêmino", "selecionarTipoVinculo"));
-
-            objetoHTML.appendChild(divCol);
-
-            return objetoHTML;
-
-        }
-
+        
         function selecionarTipoVinculo(input_selecionado){
             document.getElementById("idLinhaVincularColaborador")?.remove();
 
@@ -275,7 +399,7 @@
 
             const tipoVinculoSelecionado = input_selecionado.value
 
-            vinculos_validos = {"funeas":linhaVincularFuneas, "contrato":linhaVincularContrato, "academico":linhaVincularAcademico}
+            vinculos_validos = {"FUNEAS":linhaVincularFuneas, "CONTRATO":linhaVincularContrato, "ACADEMICO":linhaVincularAcademico}
 
             container_atualizar.appendChild(vinculos_validos[tipoVinculoSelecionado]())
 

@@ -1,0 +1,369 @@
+{% extends 'escala_geral/base.html' %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    <div class="row">
+        <div class="col-3">
+            <nav class="navbar navbar-light">
+                <ul class="navbar-nav">
+                    {% for c in configuracoes %}
+                        <a class="nav-link{% if c.slug in request.META.PATH_INFO %} active{% endif %}" 
+                           href="{{ c.url }}">
+                            {{ c.nome }}
+                        </a>
+                    {% endfor %}
+                </ul>
+                
+            </nav>
+            
+
+        </div>
+        <div class="col-9">
+            <div class="text-end">
+                <a class="btn btn-primary" style="margin-top: 10px; margin-bottom: 10px" onclick="adicionarHorario()">Adicionar Horário</a>
+            </div>
+            <table class="table table-light">
+                <thead>
+                    <tr>
+                        <th>Inicio</th>
+                        <th>Fim</th>
+                        <th>Duração</th>
+                        <th>Folga</th>
+                        <th>Inicio Almoço</th>
+                        <th>Fim Almoço</th>
+                        <th>Duração do Almoço</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    
+    </div>
+    
+    <script>
+    
+    console.log(csrftoken)
+    
+    function adicionarHorario(){
+            const idModal = 'janela-adicionar-horaio';
+            if(document.getElementById(idModal)){
+                let modal = new bootstrap.Modal(document.getElementById(idModal))
+                modal.show()
+            }else{
+                const tituloModal = "Adicionar Horário Padronizado"
+                const conteudoModal = criarConteudoModalAdicionarHorario()
+                let janela_modal = criarModal(idModal, tituloModal, conteudoModal, 'modal-lg')
+
+                document.body.appendChild(janela_modal)
+                modal = new bootstrap.Modal(janela_modal)
+                modal.show()
+            }
+        }
+
+    function calcularSaidaPlantao(event){
+        
+        const umDiaEmMilissegundos = 24 * 60 * 60 * 1000;
+        
+        const tempoMinimoDescanso1Dia = 12 * 60 * 60 * 1000;
+        
+        let formulario_dados = event.target.parentNode.parentNode
+        let entrada = formulario_dados.querySelector("#id_input_horario_inicio")
+        let duracao = formulario_dados.querySelector("#id_input_duracao_plantao")
+        let saida = formulario_dados.querySelector("#id_input_saida_plantao")
+        
+        let inputTempoSaidaAlmoco = formulario_dados.querySelector("#id-input-tempo-saida-almoco")
+        let inputHorarioSaidaAlmoco = formulario_dados.querySelector("#id-input-horario-saida-almoco")
+        let inputDuracaoAlmoco = formulario_dados.querySelector("#id-input-duracao-almoco")
+        let inputHorarioRetornoAlmoco = formulario_dados.querySelector("#id-input-horario-retorno-almoco")
+        
+        let inputDuracaoFolga = formulario_dados.querySelector("#id_input_duracao_folga")
+        
+        console.log(inputTempoSaidaAlmoco, inputHorarioSaidaAlmoco, inputDuracaoAlmoco, inputHorarioRetornoAlmoco)
+        
+        let [entradaHora, entradaMinuto] = entrada.value.split(":").map(Number);
+        let [duracaoHora, duracaoMinuto] = duracao.value.split(":").map(Number);
+        
+        console.log('duracaoHora, duracaoMinuto', duracaoHora, duracaoMinuto)
+
+        let [TempoSaidaHora, TempoSaidaMinuto] = inputTempoSaidaAlmoco.value.split(":").map(Number);
+        let [duracaoAlmocoHora, duracaoAlmocoMinuto] = inputDuracaoAlmoco.value.split(":").map(Number);
+
+        let dataEntrada = new Date();
+        dataEntrada.setHours(entradaHora);
+        dataEntrada.setMinutes(entradaMinuto);
+
+        let dataTempoSaidaAlmoco = new Date();
+        dataTempoSaidaAlmoco.setHours(TempoSaidaHora);
+        dataTempoSaidaAlmoco.setMinutes(TempoSaidaMinuto);
+
+        let dataSaidaAlmoco = new Date(dataEntrada.getTime() + (TempoSaidaHora * 60 + TempoSaidaMinuto) * 60000);
+
+        let dataRetornoAlmoco = new Date(dataSaidaAlmoco.getTime() + (duracaoAlmocoHora * 60 + duracaoAlmocoMinuto) * 60000);
+        
+        if(duracaoAlmocoHora && duracaoAlmocoHora){
+            console.log("A")
+            duracaoTotal = (duracaoHora * 60 + duracaoMinuto) * 60000 + (duracaoAlmocoHora * 60 + duracaoAlmocoMinuto) * 60000
+        }else{
+            console.log("B")
+            duracaoTotal = (duracaoHora * 60 + duracaoMinuto) * 60000
+        }
+        
+        let dataSaida = new Date(dataEntrada.getTime() + duracaoTotal)
+        
+        let saidaFormatada = dataSaida.getHours().toString().padStart(2, '0') + ":" +
+            dataSaida.getMinutes().toString().padStart(2, '0');
+
+        let saidaAlmocoFormatada = dataSaidaAlmoco.getHours().toString().padStart(2, '0') + ":" +
+            dataSaidaAlmoco.getMinutes().toString().padStart(2, '0');
+
+        let retornoAlmocoFormatado = dataRetornoAlmoco.getHours().toString().padStart(2, '0') + ":" +
+            dataRetornoAlmoco.getMinutes().toString().padStart(2, '0');
+        
+        inputHorarioSaidaAlmoco.value = saidaAlmocoFormatada
+        inputHorarioRetornoAlmoco.value = retornoAlmocoFormatado
+        
+        saida.value = saidaFormatada;
+        
+        if(duracaoTotal < tempoMinimoDescanso1Dia){
+            duracaoDescanco = umDiaEmMilissegundos - duracaoTotal
+        }else{
+            duracaoDescanco = (umDiaEmMilissegundos - duracaoTotal) + umDiaEmMilissegundos}
+        
+        if (duracaoDescanco){
+            console.log("Duração Descanso", duracaoDescanco, duracaoTotal, milissegundosParaDuracao(duracaoDescanco), milissegundosParaDuracao(duracaoTotal))
+            inputDuracaoFolga.value = milissegundosParaDuracao(duracaoDescanco)}
+    }
+
+    function milissegundosParaDuracao(tempoEmMilissegundos) {
+        // Calcula o total de segundos
+        let totalSegundos = Math.floor(tempoEmMilissegundos / 1000);
+
+        // Calcula o número de horas
+        let horas = Math.floor(totalSegundos / 3600);
+
+        // Calcula o número de minutos
+        let minutos = Math.floor((totalSegundos % 3600) / 60);
+
+        // Formata a string da duração
+        let duracaoString = horas.toString() + ":" + minutos.toString().padStart(2, '0');
+        
+        console.log(duracaoString)
+
+        return duracaoString;
+    }
+
+    function criarConteudoModalAdicionarHorario() {
+        const containerJanela = document.createElement('div');
+        containerJanela.setAttribute('class', 'container-fluid');
+
+        const formulario = criarFormularioBase("AdicionarHorario");
+        
+        const labelLinhaHorarioPlantao = document.createElement('label');
+        labelLinhaHorarioPlantao.textContent = "Dados do Plantão:";
+        labelLinhaHorarioPlantao.setAttribute('for', 'id-linha-horario-plantao');
+        
+        const linhaHorariosPlantao = document.createElement('div')
+        linhaHorariosPlantao.id = "id-linha-horario-plantao"
+        linhaHorariosPlantao.className = "input-group"
+        
+        const labelHorarioInicio = document.createElement('span');
+        labelHorarioInicio.className = "input-group-text"
+        labelHorarioInicio.textContent = "Entrada";
+        
+        const horario_inicio = document.createElement('input');
+        horario_inicio.setAttribute('type', 'time');
+        horario_inicio.id = "id_input_horario_inicio"
+        horario_inicio.setAttribute('name', 'horario_inicio');
+        horario_inicio.classList.add('form-control');
+        horario_inicio.required = true;
+        horario_inicio.addEventListener('change', calcularSaidaPlantao)
+        //horario_inicio.style.marginBottom = "1rem";
+        
+        const labelDuracaoPlantao = document.createElement('span');
+        labelDuracaoPlantao.className = "input-group-text"
+        labelDuracaoPlantao.textContent = "Duração";
+        
+        const duracao_plantao = document.createElement('input');
+        duracao_plantao.setAttribute('type', 'time');
+        duracao_plantao.setAttribute('name', 'duracao_plantao');
+        duracao_plantao.setAttribute('id', 'id_input_duracao_plantao');
+        duracao_plantao.classList.add('form-control');
+        
+        duracao_plantao.addEventListener('change', calcularSaidaPlantao)
+        
+        duracao_plantao.required = true;
+        //duracao_plantao.style.marginBottom = "1rem";
+        
+        const labelSaidaPlantao = document.createElement('span');
+        labelSaidaPlantao.className = "input-group-text"
+        labelSaidaPlantao.textContent = "Saida";
+        labelSaidaPlantao.setAttribute('placeholder', 'id_input_saida_plantao');
+        
+        const saidaPlantao = document.createElement('input');
+        saidaPlantao.setAttribute('type', 'time');
+        saidaPlantao.setAttribute('name', 'saida_plantao');
+        saidaPlantao.setAttribute('id', 'id_input_saida_plantao');
+        saidaPlantao.classList.add('form-control');
+        saidaPlantao.disabled = True
+        
+        
+        linhaHorariosPlantao.append(labelHorarioInicio, horario_inicio, labelDuracaoPlantao,
+            duracao_plantao, labelSaidaPlantao, saidaPlantao)
+        
+        
+        const duracao_folga = document.createElement('input');
+        duracao_folga.setAttribute('type', 'text');
+        duracao_folga.setAttribute('name', 'duracao_folga');
+        duracao_folga.setAttribute('id', 'id_input_duracao_folga');
+        duracao_folga.classList.add('form-control');
+        //duracao_folga.placeholder = 'Duração da Folga (horas)';
+        duracao_folga.required = true;
+        duracao_folga.style.marginBottom = "1rem";
+
+        duracao_folga.addEventListener('change', function(event) {
+            let valor = event.target.value.trim(); // Remover espaços em branco
+            let [horaStr, minutoStr] = valor.split(':'); // Separar a entrada em hora e minuto
+
+            // Converter hora e minuto para números e garantir que sejam válidos
+            let hora = isNaN(parseInt(horaStr)) ? 0 : parseInt(horaStr);
+            let minuto = isNaN(parseInt(minutoStr)) ? 0 : parseInt(minutoStr);
+
+            // Garantir que a hora e o minuto estejam no intervalo correto
+            hora = Math.max(0, Math.min(999, hora)); // Máximo de 999 horas
+            minuto = Math.max(0, Math.min(59, minuto)); // Máximo de 59 minutos
+
+            // Formatar a hora e o minuto com dois dígitos
+            let horaFormatada = hora.toString().padStart(2, '0');
+            let minutoFormatado = minuto.toString().padStart(2, '0');
+
+            // Definir o valor do campo de entrada como hora:minuto
+            duracao_folga.value = horaFormatada + ':' + minutoFormatado;
+        });
+
+        const labelDuracaoFolga = document.createElement('label');
+        labelDuracaoFolga.textContent = "Duração da Folga (Horas):";
+        labelDuracaoFolga.setAttribute('for', 'duracao_folga');
+        
+        const labelLinhaHorarioAlmoco = document.createElement('label');
+        labelLinhaHorarioAlmoco.textContent = "Horário de Almoço:";
+        labelLinhaHorarioAlmoco.setAttribute('for', 'id-linha-horario-almoco');
+        
+        
+        const linhaHorariosAlmoco = document.createElement('div')
+        linhaHorariosAlmoco.className = "input-group"
+        linhaHorariosAlmoco.id = "id-linha-horario-almoco"
+        
+        const labelSaidaAlmoco = document.createElement('span');
+        labelSaidaAlmoco.className = "input-group-text"
+        labelSaidaAlmoco.textContent = "Sair após:";
+        
+        const saidaAlmoco = document.createElement('input');
+        saidaAlmoco.setAttribute('type', 'time');
+        saidaAlmoco.id = "id-input-tempo-saida-almoco"
+        saidaAlmoco.setAttribute('name', 'inicio_almoco');
+        saidaAlmoco.classList.add('form-control');
+        saidaAlmoco.addEventListener('change', calcularSaidaPlantao)
+        
+        const horario_almoco = document.createElement('input');
+        horario_almoco.setAttribute('id', "id-input-horario-saida-almoco")
+        horario_almoco.setAttribute('type', 'time');
+        horario_almoco.setAttribute('name', 'horario_almoco');
+        horario_almoco.classList.add('form-control');
+        horario_almoco.disabled = True
+        
+        const labelHorarioAlmoco = document.createElement('span');
+        labelHorarioAlmoco.className = "input-group-text"
+        labelHorarioAlmoco.textContent = "Inicio";
+        
+        const labelDuracaoAlmoco = document.createElement('span');
+        labelDuracaoAlmoco.className = "input-group-text"
+        labelDuracaoAlmoco.textContent = "Duração";
+        
+        const duracao_almoco = document.createElement('input');
+        duracao_almoco.id = "id-input-duracao-almoco"
+        duracao_almoco.setAttribute('type', 'time');
+        duracao_almoco.setAttribute('name', 'duracao_almoco');
+        duracao_almoco.classList.add('form-control');
+        duracao_almoco.addEventListener('change', calcularSaidaPlantao)
+        
+        const labelRetornoAlmoco = document.createElement('span');
+        labelRetornoAlmoco.className = "input-group-text"
+        labelRetornoAlmoco.textContent = "Retorno";
+        
+        const retornoAlmoco = document.createElement('input');
+        retornoAlmoco.id = "id-input-horario-retorno-almoco"
+        retornoAlmoco.setAttribute('type', 'time');
+        retornoAlmoco.setAttribute('name', 'retorno_almoco');
+        retornoAlmoco.classList.add('form-control');
+        retornoAlmoco.disabled = True
+        
+        linhaHorariosAlmoco.append(labelSaidaAlmoco, saidaAlmoco, labelHorarioAlmoco, horario_almoco,
+            labelDuracaoAlmoco, duracao_almoco, labelRetornoAlmoco, retornoAlmoco)
+        
+
+        let divFolgaSabado = document.createElement('div')
+        divFolgaSabado.className = "form-check form-switch"
+        divFolgaSabado.style.marginBottom = "1rem";
+        
+        const folga_sabado = document.createElement('input');
+        folga_sabado.setAttribute('type', 'checkbox');
+        folga_sabado.setAttribute('name', 'folga_sabado');
+        folga_sabado.setAttribute('role', 'switch');
+        folga_sabado.classList.add('form-check-input');
+        
+
+        const folgaSabadoLabel = document.createElement('label');
+        folgaSabadoLabel.innerHTML = "Folga aos Sábados";
+        folgaSabadoLabel.setAttribute('for', 'folga_sabado');
+        
+        divFolgaSabado.append(folga_sabado, folgaSabadoLabel)
+        
+        let divFolgaDomingo = document.createElement('div')
+        divFolgaDomingo.className = "form-check form-switch"
+        divFolgaDomingo.style.marginBottom = "1rem";
+
+        const folga_domingo = document.createElement('input');
+        folga_domingo.setAttribute('type', 'checkbox');
+        folga_domingo.setAttribute('name', 'folga_domingo');
+        folga_domingo.setAttribute('role', 'switch');
+        folga_domingo.classList.add('form-check-input');
+        
+
+        const folgaDomingoLabel = document.createElement('label');
+        folgaDomingoLabel.innerHTML = "Folga aos Domingos";
+        folgaDomingoLabel.setAttribute('for', 'folga_domingo');
+        
+        divFolgaDomingo.append(folga_domingo, folgaDomingoLabel)
+
+        const adicionar = document.createElement("button");
+        adicionar.appendChild(document.createTextNode("Adicionar"));
+        adicionar.classList.add("btn", "btn-primary");
+        adicionar.setAttribute('type', 'submit');
+        adicionar.style.marginBottom = "5px";
+
+        formulario.append(
+            labelLinhaHorarioPlantao,
+            linhaHorariosPlantao,
+            
+            labelLinhaHorarioAlmoco,
+            linhaHorariosAlmoco,
+            
+            labelDuracaoFolga,
+            duracao_folga,
+            
+            divFolgaSabado,
+            divFolgaDomingo,
+            adicionar
+        );
+
+        containerJanela.appendChild(formulario);
+
+        return containerJanela;
+    }
+
+        
+    </script>
+
+
+{% endblock %}

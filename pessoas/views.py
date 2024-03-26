@@ -13,10 +13,10 @@ from django.db.models.expressions import Value
 
 from localflavor.br.br_states import STATE_CHOICES
 
-from escala_geral.models import DadosConselhoProfissional
+from escala_geral.models import DadosConselhoProfissional, RegimeEscala, Escala
 
 from pessoas.ferramentas.organizacao import listar_setores_unidade, buscar_pessoas_fisicas_com_vinculo_unidade, \
-    buscar_pessoas_fisicas_com_vinculo_setor
+    buscar_pessoas_fisicas_com_vinculo_setor, nomear_vinculo_funcional
 from pessoas.ferramentas.pessoas import (
     buscar_vinculos_colaborador, busca_web_pessoa_fisica, acrescentar_vinculos_profissional)
 from pessoas.forms import FormularioUnidade, FormularioNovoSetorUnidade, FormularioSetorUnidade
@@ -24,14 +24,14 @@ import json
 
 from pessoas.models import PessoaFisica, Unidade, PessoaFisicaUsuario, VinculoPessoaFisicaSetor, Setor, \
     VinculoFuncional, Profissional, VinculoColaboradorUnidade
-from comuns.models import Funcao, ConselhoProfissional, Ocupacao
+from comuns.models import Funcao, ConselhoProfissional, Ocupacao, Fornecedor
 from comuns.ferramentas.gerais import retornar_valor_nao_nulo
 
 # Create your views here.
 
 @login_required
 def inicio(request):
-    return redirect("Pessoas:colaboradores")
+    return redirect("Pessoas:organizacao")
 
 
 @login_required
@@ -71,7 +71,7 @@ class BaseViewOrganizacao(LoginRequiredMixin, View):
 
         unidades = Unidade.objects.filter(
             vinculocolaboradorunidade__vinculo_funcional__profissional__pessoa_fisica=cpf_usuario.pessoa_fisica
-        ).values('id', 'nome_unidade', 'sigla_unidade', 'slug')
+        ).values('id', 'nome_unidade', 'sigla_unidade', 'slug').distinct()
 
         print(unidades)
 
@@ -110,6 +110,70 @@ class Colaborador(BaseViewOrganizacao):
         super().__init__(**kwargs)
         self.colaborador = None
 
+    def criar_vinculo_funcional(self, request, post):
+        print('Criar Vinculo Funcional')
+        print(post)
+        vinculos_processaveis = {
+            VinculoFuncional.Vinculo.FUNEAS.label: self.criar_vinculo_funeas,
+            VinculoFuncional.Vinculo.CONTRATO.label: self.criar_vinculo_contrato,
+            VinculoFuncional.Vinculo.ACADEMICO.label: self.criar_vinculo_academico,
+        }
+        return vinculos_processaveis[post['tipoVinculo']](request, post)
+
+    def criar_vinculo_funeas(self, request, post):
+        print(request, post)
+        funeas = Fornecedor.objects.get(cnpj_fornecedor="24039073000155")
+        unidade = Unidade.objects.get(id=int(post['idUnidade']))
+        profissional = Profissional.objects.get(id=post['idProfissional'])
+        print(funeas)
+        vinculo, criado = VinculoFuncional.objects.update_or_create(
+            profissional=profissional, cnpj_vinculo=funeas, tipo_vinculo=VinculoFuncional.Vinculo.FUNEAS,
+            defaults={'vinculo_ativo': True}
+        )
+        vinculo_unidade, vuc = VinculoColaboradorUnidade.objects.update_or_create(
+            unidade=unidade, vinculo_funcional=vinculo, defaults={'ativo': True, 'fim_vinculo': None})
+
+        return redirect('Pessoas:Colaborador', slug_colaborador=self.colaborador.slug)
+
+    def criar_vinculo_contrato(self, request, post):
+        print('Criar Vinculo Contrato')
+        print(post)
+        fornecedor = Fornecedor.objects.get(id=int(post['idFornecedor']))
+        profissional = Profissional.objects.get(id=post['idProfissional'])
+
+        unidade = Unidade.objects.get(id=int(post['idUnidade']))
+
+        print(profissional)
+        print(fornecedor)
+
+        vinculo, criado = VinculoFuncional.objects.update_or_create(
+            profissional=profissional, cnpj_vinculo=fornecedor, tipo_vinculo=VinculoFuncional.Vinculo.CONTRATO,
+            defaults={'vinculo_ativo': True}
+        )
+
+        vinculo_unidade, vuc = VinculoColaboradorUnidade.objects.update_or_create(
+            unidade=unidade, vinculo_funcional=vinculo, defaults={'ativo': True, 'fim_vinculo': None})
+
+        return redirect('Pessoas:Colaborador', slug_colaborador=self.colaborador.slug)
+
+    def criar_vinculo_academico(self, request, post):
+        print('Criar Vinculo Contrato')
+        print(post)
+
+        unidade = Unidade.objects.get(id=int(post['idUnidade']))
+
+        fornecedor = Fornecedor.objects.get(id=int(post['idFornecedor']))
+        profissional = Profissional.objects.get(id=post['idProfissional'])
+
+        vinculo, criado = VinculoFuncional.objects.update_or_create(
+            profissional=profissional, cnpj_vinculo=fornecedor, tipo_vinculo=VinculoFuncional.Vinculo.ACADEMICO,
+            defaults={'vinculo_ativo': True})
+
+        vinculo_unidade, vuc = VinculoColaboradorUnidade.objects.update_or_create(
+            unidade=unidade, vinculo_funcional=vinculo, defaults={'ativo': True, 'fim_vinculo': None})
+
+        return redirect('Pessoas:Colaborador', slug_colaborador=self.colaborador.slug)
+
     def vincular_funcao_colaborador(self, request, post):
         funcao_vincular = Funcao.objects.get(id=int(post['funcaoSelecionada']))
 
@@ -134,8 +198,40 @@ class Colaborador(BaseViewOrganizacao):
 
         return redirect('Pessoas:Colaborador', slug_colaborador=self.colaborador.slug)
 
+    def inativar_vinculo_funcional(self, request, post):
+        vinculo = VinculoFuncional.objects.get(id=post['idVinculoFuncional'])
+        vinculo.vinculo_ativo = False
+        vinculo.save()
+
+        return JsonResponse({'status': 'ok', 'idVinculoFuncional': post['idVinculoFuncional']}, safe=False)
+
+    def buscar_fornecedor_contratado_vincular(self, request, post):
+        print(request, post)
+        razao_social = post['razaoSocial']
+        cnpj_buscar = post['cnpj']
+
+        filters = {}
+
+        from validate_docbr import CNPJ
+
+        if CNPJ().validate(cnpj_buscar) is True:
+            filters['cnpj_fornecedor'] = cnpj_buscar
+        elif len(razao_social) >= 3:
+            filters['razao_social_fornecedor__icontains'] = razao_social
+        else:
+            return JsonResponse({'status': 'informações-invalidas', 'idProfissional': post['idProfissional']}, safe=False)
+        fornecedores = Fornecedor.objects.filter(**filters).values('razao_social_fornecedor', 'id')
+
+        return JsonResponse({'status': 'ok',
+                             'idProfissional': post['idProfissional'],
+                             'fornecedores': list(fornecedores),
+                             }, safe=False)
+
     def processar_post(self, request, post):
-        tipos_acao = {"vincularFuncaoColaborador": self.vincular_funcao_colaborador}
+        tipos_acao = {"vincularFuncaoColaborador": self.vincular_funcao_colaborador,
+                      'criarVinculoFuncional': self.criar_vinculo_funcional,
+                      'inativarVinculoFuncional': self.inativar_vinculo_funcional,
+                      'buscarFornecedorContratadoVincular': self.buscar_fornecedor_contratado_vincular}
         return tipos_acao[post['tipo-acao']](request, post)
 
     def post(self, request, *args, **kwargs):
@@ -159,7 +255,7 @@ class Colaborador(BaseViewOrganizacao):
             estado_conselho=F('dadosconselhoprofissional__estado_conselho'),
             numero_conselho=F('dadosconselhoprofissional__numero'))]
 
-        self.context['vinculos_colaborador'] = buscar_vinculos_colaborador(self.colaborador)
+        #self.context['vinculos_colaborador'] = buscar_vinculos_colaborador(self.colaborador)
 
         self.context['funcoes'] = list(
             Funcao.objects.filter(ativa=True).values('nome', 'id').annotate(
@@ -221,6 +317,58 @@ class ViewSetor(BaseViewOrganizacao):
         form = FormularioSetorUnidade(instance=self.setor)
         self.context['form'] = form
         return render(request, 'pessoas/unidade.html', self.context)
+
+
+class ViewEscalaSetor(BaseViewOrganizacao):
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+
+    def processar_post(self, request, post):
+        print(post)
+        tipos_acao = {"AdicionarEscala": self.adicionar_escala}
+
+        return tipos_acao[post['tipo-acao']](request, post)
+    def post(self, request, *args, **kwargs):
+        post = request.POST.copy().dict()
+        return self.processar_post(request, post)
+
+    def adicionar_escala(self, request, post):
+
+        if (regime_escala := post['regimeEscala']) in RegimeEscala.values and self.setor.id == int(post['id_setor']):
+            nome_escala = post['nomeEscala']
+            escala, created = Escala.objects.update_or_create(nome_escala=nome_escala,
+                                                              regime_escala=regime_escala,
+                                                              setor=self.setor, defaults={"escala_ativa":True}
+                                                              )
+            print(escala)
+        else:
+            messages.error(request, 'Erro ao adicionar escala, informações incorretas')
+
+        return redirect("Pessoas:Gerenciar Escalas Setor",
+                        slug_setor=self.setor.slug, slug_unidade=self.unidade.slug)
+
+    def get(self, request, *args, **kwargs):
+        self.context['escalas'] = list(Escala.objects.filter(setor=self.setor).values(
+            'id', 'nome_escala', 'escala_ativa', 'regime_escala', 'slug'))
+
+        self.context['regimes_escala'] = [{'value': opcao.value, "label": opcao.label} for opcao in RegimeEscala]
+
+        print(self.unidade, self.setor)
+        self.nav_path = [{"nome": "Organização", 'href': resolve_url("Pessoas:organizacao"), 'ativo': False, 'options': None},
+                         {"nome": self.unidade.nome_unidade,
+                          'href': resolve_url('Pessoas:Gerenciar Unidade', slug_unidade=self.unidade.slug),
+                          'ativo': False, 'options': None},
+                         {"nome": self.setor.nome_setor,
+                          'href': resolve_url('Pessoas:Gerenciar Setor', slug_unidade=self.unidade.slug,
+                                              slug_setor=self.setor.slug),
+                          'ativo': False, 'options': None},
+                         {"nome": "Escalas", 'href': "#", 'ativo': False, 'options': None}
+                         ]
+        self.context['nav_path'] = self.nav_path
+
+        return render(request, 'pessoas/organizacao/escalas_setor.html', self.context)
+
 
 
 class ViewColaboradoresUnidade(BaseViewOrganizacao):
@@ -299,17 +447,19 @@ class ViewColaboradoresSetorVincular(BaseViewOrganizacao):
                    }
 
         colaboradores = Profissional.objects.filter(filtros[post['tipo-busca']]).values(
-            'pessoa_fisica__nome', 'id', 'funcao__nome', 'vinculofuncional__id', 'vinculofuncional__vinculocolaboradorunidade__id'
-            )
+            'pessoa_fisica__nome', 'id', 'funcao__nome', 'vinculofuncional__id',
+            'vinculofuncional__vinculocolaboradorunidade__id').distinct()
 
-        #colaboradores = VinculoColaboradorUnidade.objects.filter(filtro_vinculos)
-        return JsonResponse({'status': 'ok',
-                             'colaboradores': [{'nome': c['pessoa_fisica__nome'],
-                                                'id': c['id'],
-                                                'funcao': c['funcao__nome'],
-                                                'id_vinculo_colaborador_unidade': c['vinculofuncional__vinculocolaboradorunidade__id']
-                                                } for c in colaboradores]
-                             }, safe=False)
+        return JsonResponse(
+            {'status': 'ok',
+             'colaboradores': [
+                 {'nome': c['pessoa_fisica__nome'],
+                  'id': c['id'],
+                  'funcao': c['funcao__nome'],
+                  'id_vinculo_colaborador_unidade': c['vinculofuncional__vinculocolaboradorunidade__id'],
+                  'vinculo': nomear_vinculo_funcional(c['vinculofuncional__id'])
+                  } for c in colaboradores]
+             }, safe=False)
 
     def vincular_colaboradores_setor(self, request, post):
         post_processar = request.POST.copy()

@@ -76,6 +76,7 @@ def extrair_dados_relatorio_cns_tabula(arquivo):
                 numero = conselho[2]
                 funcao = "MEDICO" if 'MEDICO' in unidecode(conselho[3]).upper() else unidecode(conselho[3]).upper()
                 print(funcao)
+                print(nome_conselho)
 
                 conselho_profissional = ConselhoProfissional.objects.get(sigla=nome_conselho)
 

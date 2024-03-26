@@ -1,0 +1,93 @@
+{% extends 'contratos/base.html' %}
+
+{% load django_bootstrap5 %}
+
+{% bootstrap_messages %}
+
+{% block conteudo_pagina %}
+
+    {% include 'nav/nav_path.html' %}
+
+    <div class="d-flex justify-content-center"><h1>{{ fornecedor.razao_social_fornecedor }}</h1></div>
+    <div class="d-flex justify-content-center"><h2>CNPJ {{ fornecedor.cnpj_fornecedor }}</h2></div>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs justify-content-center" style="margin-bottom: 25px">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#dadoscadastrais">Dados Cadastrais</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#contratos">Contratos</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#colaboradores">Colaboradores</a>
+        </li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div class="tab-pane container active" id="dadoscadastrais">
+            <div class="container-fluid">
+                
+                <form action="" method="POST">
+                    {% csrf_token %}
+                    {% bootstrap_form form %}
+                    <input type="submit" class="btn btn-dark" value="Atualizar">
+                </form>
+
+            </div>
+            
+        </div>
+        <div class="tab-pane container fade" id="contratos">
+            <div class="d-flex justify-content-end">
+                 <a class="btn btn-primary" style="cursor: pointer" 
+           href="{% url 'Contratos:Novo Contrato Fornecedor' slug_fornecedor=fornecedor.slug %}">
+            Adicionar Contrato</a>
+            </div>
+            <div class="d-flex justify-content-left">
+                {% include 'contratos/contratos/tabela_contratos.html' %}
+            </div>
+            
+            
+            
+        </div>
+        <div class="tab-pane container fade" id="colaboradores">
+            <div class="d-flex justify-content-center">
+                <h5>Colaboradores</h5>
+            </div>
+            
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-6">
+            
+
+        </div>
+
+        <div class="col-6">
+            <div class="container-fluid">
+                
+            </div>
+
+        </div>
+    
+    </div>
+    
+    <br>
+    <br>
+    
+    
+    <script>
+    
+    document.addEventListener('DOMContentLoaded', function() {
+            VMasker(document.getElementById('id_cep_fornecedor')).maskPattern('99999-999');
+        });
+    </script>
+    
+    
+    
+    
+    
+    
+{% endblock %}
